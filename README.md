@@ -19,8 +19,8 @@ Flight delays cost the global aviation industry tens of billions of dollars annu
 
 ### Target Definition
 - **Target Variable:** `DEP_DEL15`
-- **Class 1 (Delayed):** Departure delay $\ge 15$ minutes
-- **Class 0 (On-time):** Departure delay $< 15$ minutes
+- **Class 1 (Delayed):** Departure delay >= 15 minutes
+- **Class 0 (On-time):** Departure delay < 15 minutes
 - **Evaluation Benchmark:** Classification Accuracy on an untouched, out-of-time chronological test set.
 
 ---
@@ -29,7 +29,7 @@ Flight delays cost the global aviation industry tens of billions of dollars annu
 
 All candidate models were trained on the training partition (Days 1–21) and systematically evaluated on the validation partition (Days 22–26):
 
-| Model Architecture | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Optimal Threshold ($\tau^*$) |
+| Model Architecture | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Optimal Threshold |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Ensemble Blend (LightGBM + XGB + CatBoost)** | **77.26%** | **67.98%** | **13.51%** | **0.2254** | **0.6794** | **0.48** |
 | **XGBoost Classifier** | 77.24% | 69.48% | 12.56% | 0.2127 | 0.6801 | 0.51 |
@@ -41,7 +41,7 @@ All candidate models were trained on the training partition (Days 1–21) and sy
 
 ---
 
-## 3. Locked Test Set Results (Days 27–31, $N = 78,904$)
+## 3. Locked Test Set Results (Days 27–31, N = 78,904)
 
 The winning ensemble was evaluated on the locked, untouched test partition:
 
@@ -51,7 +51,7 @@ The winning ensemble was evaluated on the locked, untouched test partition:
 - **F1-Score:** 20.12%
 - **ROC-AUC:** 0.6440
 - **PR-AUC:** 0.4244
-- **Calibrated Decision Threshold:** $\tau^* = 0.48$
+- **Calibrated Decision Threshold:** 0.48
 
 ### Confusion Matrix
 ```
@@ -78,8 +78,8 @@ To ensure realistic, deployable performance, this pipeline strictly excludes pos
    - **Locked Test (Days 27–31):** 78,904 flights (15.3%)
 
 3. **Indirect Leakage Prevention:**
-   - Historical delay rates for routes, carriers, and airports were computed **strictly on the training split** and mapped to validation/test using Bayesian prior smoothing ($m=10$).
-   - Aircraft turnaround slack is computed strictly from the preceding scheduled leg with scheduled arrival prior to current departure.
+   - Historical delay rates for routes, carriers, and airports were computed **strictly on the training split** and mapped to validation/test using Bayesian prior smoothing (smoothing weight = 10).
+   - Aircraft turnaround slack is computed strictly from the preceding scheduled leg with scheduled arrival prior to current departure (`CRS_ARR_TIME_prev < CRS_DEP_TIME_curr`).
 
 ---
 
@@ -88,11 +88,11 @@ To ensure realistic, deployable performance, this pipeline strictly excludes pos
 The model uses 34 domain-engineered features categorized into four functional groups:
 
 1. **Temporal & Schedule Dynamics:**
-   - Scheduled departure and arrival hour/minute/total minutes
-   - Cyclical hour encoding: $\sin(2\pi \cdot \text{hour} / 24)$, $\cos(2\pi \cdot \text{hour} / 24)$
-   - Day of week cyclical encoding: $\sin(2\pi \cdot \text{DOW} / 7)$, $\cos(2\pi \cdot \text{DOW} / 7)$
-   - Weekend indicator and operational time-of-day buckets
-   - Scheduled block speed proxy ($\text{distance} / \text{elapsed\_time}$)
+   - Scheduled departure and arrival hour, minute, and total day minutes
+   - Cyclical hour encoding: `sin(2 * pi * hour / 24)`, `cos(2 * pi * hour / 24)`
+   - Day of week cyclical encoding: `sin(2 * pi * dow / 7)`, `cos(2 * pi * dow / 7)`
+   - Weekend indicator and operational time-of-day buckets (early morning, morning rush, midday, evening rush, late night)
+   - Scheduled block speed proxy: `distance / (sched_elapsed_time + 1e-5)`
 
 2. **Airport & Hub Congestion Proxies:**
    - Scheduled departures at Origin airport within hourly window
@@ -101,8 +101,8 @@ The model uses 34 domain-engineered features categorized into four functional gr
    - Carrier departure count and market share percentage at Origin airport
 
 3. **Aircraft Turnaround & Propagation (FDPIS Core):**
-   - Scheduled turnaround buffer in minutes ($\text{CRS\_DEP\_TIME}_{\text{curr}} - \text{CRS\_ARR\_TIME}_{\text{prev}}$)
-   - Tight turnaround risk indicator (slack $< 45$ minutes)
+   - Scheduled turnaround buffer in minutes: `CRS_DEP_TIME_curr - CRS_ARR_TIME_prev`
+   - Tight turnaround risk indicator (buffer < 45 minutes)
    - Negative buffer indicator (inbound scheduled arrival exceeds scheduled departure)
    - Daily flight sequence counter for the aircraft tail number
 
@@ -111,8 +111,8 @@ The model uses 34 domain-engineered features categorized into four functional gr
    - Origin airport historical delay rate
    - Destination airport historical delay rate
    - Route historical delay rate
-   - Origin $\times$ Departure Hour interaction delay rate
-   - Carrier $\times$ Origin Hub interaction delay rate
+   - Origin * Departure Hour interaction delay rate
+   - Carrier * Origin Hub interaction delay rate
 
 ---
 
