@@ -1,0 +1,16 @@
+# Ignore raw datasets and large binary cache files
+*.csv
+*.parquet
+*.zip
+*.tar.gz
+
+# Retain results, metrics, feature maps, and models
+!results/*.json
+!results/*.csv
+!models/*.json
+!models/*.pkl
+
+# Python artifacts
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
