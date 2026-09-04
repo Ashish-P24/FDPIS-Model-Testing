@@ -2008,11 +2008,10 @@
             zoomControl: true
         });
 
-        // Clean light aviation CartoDB Positron basemap tiles
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19
+        // Clean standard OpenStreetMap basemap tiles (no API key required)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
         }).addTo(leafletMap);
 
         // Click outside aircraft deselects
@@ -2023,12 +2022,13 @@
 
     function createAircraftIcon(flight) {
         const heading = Math.round(flight.heading || 0);
-        const isSelected = selectedLiveFlightId === (flight.matched_fdpis_flight_id || flight.callsign);
+        const flightId = flight.flight_id || flight.matched_fdpis_flight_id || flight.callsign;
+        const isSelected = selectedLiveFlightId === flightId;
         
         // Color coding by status & FDPIS risk
         let color = '#0284c7'; // Default sky blue
-        if (flight.matched_fdpis_flight_id) {
-            const risk = flight.delay_prob || 0;
+        const risk = (flight.fdpis_delay_prob !== undefined) ? flight.fdpis_delay_prob : (flight.delay_prob || 0);
+        if (flight.fdpis_matched || flight.matched_fdpis_flight_id) {
             if (risk >= 0.40) color = '#dc2626'; // High delay risk (red)
             else if (risk >= 0.20) color = '#d97706'; // Elevated (amber)
             else color = '#16a34a'; // Low risk (green)
@@ -2060,12 +2060,26 @@
         try {
             const res = await fetch('/api/live-flights');
             const data = await res.json();
-            liveFlightsData = data.flights || [];
+            liveFlightsData = (data.flights || []).map(f => ({
+                ...f,
+                matched_fdpis_flight_id: f.matched_fdpis_flight_id || f.flight_id,
+                destination: f.destination || f.dest,
+                delay_prob: (f.delay_prob !== undefined) ? f.delay_prob : (f.fdpis_delay_prob || 0),
+                predicted_delay: (f.predicted_delay !== undefined) ? f.predicted_delay : (f.fdpis_predicted_delay || 0),
+                altitude_ft: f.altitude_ft || f.altitude || 0,
+                ground_speed_kts: f.ground_speed_kts || f.ground_speed || 0,
+                vertical_speed_fpm: f.vertical_speed_fpm || f.vertical_speed || 0,
+                flight_status: f.flight_status || f.status || 'CRUISE',
+                eta_utc: f.eta_utc || f.eta || '--:-- UTC',
+                remaining_distance_nm: f.remaining_distance_nm || f.distance_mi || 0
+            }));
             liveFlightsLoaded = true;
 
             // Update header telemetry badges
-            document.getElementById('live-aircraft-count').innerText = `${data.total_tracked} Tracked`;
-            document.getElementById('live-surveillance-mode').innerText = data.mode.toUpperCase();
+            const trackedCount = data.count || data.total_tracked || liveFlightsData.length;
+            document.getElementById('live-aircraft-count').innerText = `${trackedCount} Tracked`;
+            const modeText = data.mode || "SURVEILLANCE ONLINE";
+            document.getElementById('live-surveillance-mode').innerText = modeText.toUpperCase();
 
             renderLiveAircraftOnMap();
 
@@ -2151,8 +2165,8 @@
                 marker.bindTooltip(`
                     <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.3;">
                         <strong>${f.callsign}</strong> (${f.origin} → ${f.destination})<br>
-                        Alt: ${f.altitude_ft.toLocaleString()} ft | Spd: ${f.ground_speed_kts} kts<br>
-                        ${f.matched_fdpis_flight_id ? `<span style="color:${f.delay_prob >= 0.40 ? '#dc2626' : '#16a34a'}; font-weight:700;">Risk: ${(f.delay_prob*100).toFixed(0)}% (+${Math.round(f.predicted_delay || 0)}m)</span>` : '<em>Unmatched Flight</em>'}
+                        Alt: ${(f.altitude_ft || 0).toLocaleString()} ft | Spd: ${f.ground_speed_kts || 0} kts<br>
+                        ${f.matched_fdpis_flight_id ? `<span style="color:${f.delay_prob >= 0.40 ? '#dc2626' : '#16a34a'}; font-weight:700;">Risk: ${(f.delay_prob*100).toFixed(0)}% (+${Math.round(f.predicted_delay || 0)}m)</span>` : '<em>Monitored Flight</em>'}
                     </div>
                 `, { direction: 'top', offset: [0, -10] });
 
@@ -2190,7 +2204,7 @@
             const ident = flight.matched_fdpis_flight_id || flight.callsign;
             const res = await fetch(`/api/live-flights/${encodeURIComponent(ident)}`);
             const deepData = await res.json();
-            renderSelectedLiveFlight(deepData.flight, deepData.aircraft_rotation);
+            renderSelectedLiveFlight(flight, deepData.fdpis_rotation || deepData.aircraft_rotation || []);
         } catch (e) {
             console.error("Error fetching live aircraft details:", e);
             renderSelectedLiveFlight(flight, null);

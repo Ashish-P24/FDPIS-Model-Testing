@@ -426,6 +426,8 @@ def get_live_flights(
         
     return {
         "status": data.get("status", "LIVE"),
+        "mode": data.get("mode", "Live Surveillance Feed"),
+        "total_tracked": data.get("count", len(flights)),
         "age_seconds": data.get("age_seconds", 0),
         "timestamp_utc": data.get("timestamp_utc", ""),
         "count": len(flights),

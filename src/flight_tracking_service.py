@@ -268,8 +268,10 @@ class FlightTrackingService:
 
         self.cached_flights = flights
         self.last_fetch_time = now
+        provider_mode = "Flightradar24 Live API" if self.fr24_key else ("OpenSky Network ADS-B" if (self.opensky_user or os.getenv("USE_OPENSKY")) else "FDPIS Live Fleet Surveillance")
         return {
             "status": "LIVE",
+            "mode": provider_mode,
             "age_seconds": 0,
             "timestamp_utc": time.strftime("%H:%M:%S UTC", time.gmtime(now)),
             "count": len(flights),
