@@ -1,0 +1,8 @@
+{
+  "regressor_model": "LightGBM Regressor",
+  "test_mae": 20.073461842064436,
+  "test_rmse": 68.76846985880033,
+  "test_r2": -0.021104182638710833,
+  "test_median_ae": 0.9498879599679549,
+  "test_sample_size": 78904
+}

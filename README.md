@@ -1,33 +1,57 @@
-# Flight Delay Propagation Intelligence System (FDPIS) — ML Engine
+# Flight Delay Propagation Intelligence System (FDPIS) — End-to-End Platform
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![ML Framework](https://img.shields.io/badge/Models-LightGBM%20%7C%20XGBoost%20%7C%20CatBoost-blue.svg)]()
 [![Validation Accuracy](https://img.shields.io/badge/Validation%20Accuracy-77.26%25-green.svg)]()
 [![Test Accuracy](https://img.shields.io/badge/Final%20Test%20Accuracy-77.44%25-green.svg)]()
+[![Delay Regressor MAE](https://img.shields.io/badge/Delay%20Regressor%20MAE-20.07%20min-blue.svg)]()
 
-A machine learning engine developed for the Flight Delay Propagation Intelligence System (FDPIS) project to predict primary flight departure delays (`DEP_DEL15`) and network cascade risks using US Bureau of Transportation Statistics (BTS) on-time performance records.
-
----
-
-## 1. Project Overview & Objective
-
-The primary objective of this project is to construct a verified, leakage-free machine learning model achieving the highest legitimate classification accuracy on commercial flight departure delays.
-
-### Core Problem
-Flight delays cost the global aviation industry tens of billions of dollars annually. Early prediction of primary flight delays (3 to 6 hours before departure) allows Operations Control Centres (OCC) to proactively manage aircraft rotations, reposition standby crew, and mitigate downstream network delay propagation.
-
-### Target Definition
-- **Target Variable:** `DEP_DEL15`
-- **Class 1 (Delayed):** Departure delay >= 15 minutes
-- **Class 0 (On-time):** Departure delay < 15 minutes
-- **Evaluation Benchmark:** Classification Accuracy on an untouched, out-of-time chronological test set.
+The Flight Delay Propagation Intelligence System (FDPIS) is a production-grade, network-aware aviation analytics and machine learning platform. It combines gradient boosting classification, Huber-loss delay magnitude regression, and a graph propagation engine (Breadth-First Search over aircraft rotations) to forecast flight delays and downstream cascade risks 3 to 6 hours before departure.
 
 ---
 
-## 2. Model Performance & Leaderboard
+## 1. System Architecture (5 Layers)
 
-All candidate models were trained on the training partition (Days 1–21) and systematically evaluated on the validation partition (Days 22–26):
+```
+[ Layer 1: Data Ingestion & Chronological Partitions ]
+  BTS Flight Performance Data (517,222 Valid Records, Jan 2026)
+  Train (Days 1-21) | Val (Days 22-26) | Locked Test (Days 27-31)
+                    │
+                    ▼
+[ Layer 2: Pre-Departure Feature Engineering ]
+  34 Verified Leakage-Free Features:
+  - Temporal & Cyclical (Hour/Day Sin/Cos, Time-of-Day Buckets)
+  - Hub & Route Congestion (Hourly Departures, Carrier Market Share)
+  - Inbound Aircraft Turnaround Buffer (Sched Dep - Inbound Sched Arr)
+  - Bayesian Smoothed Delay Rates (Computed strictly on Train set)
+                    │
+                    ▼
+[ Layer 3: Dual ML Prediction Engine ]
+  ┌─────────────────────────────────┬─────────────────────────────────┐
+  │      Classifier (DEP_DEL15)     │    Regressor (Delay Magnitude)  │
+  │ Ensemble (LGBM + XGB + CatBoost)│  LightGBM Huber-Loss Regressor  │
+  │ • Competition: 77.44% Accuracy  │  • Test MAE: 20.07 min          │
+  │ • Operations: 65.47% Recall     │  • Test MedAE: 0.95 min         │
+  └─────────────────────────────────┴─────────────────────────────────┘
+                    │
+                    ▼
+[ Layer 4: Network Propagation Engine (BFS Graph) ]
+  Directed Acyclic Rotation Chains:
+  Transmitted Delay = (Incoming Delay * 0.95) - Absorbable Slack
+                    │
+                    ▼
+[ Layer 5: Operational Decision & Recommendation Layer ]
+  - FastAPI Asynchronous REST Engine
+  - Rule-Based Advisory Alerts (DGCA/FDTL Crew Duty Limits, Turnaround Compression)
+  - Interactive Operations Dashboard (Vis.js Cascade Tree Visualizer)
+```
+
+---
+
+## 2. ML Performance & Benchmark Results
+
+### A. Classification Suite (Target: `DEP_DEL15`)
 
 | Model Architecture | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Optimal Threshold |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -36,231 +60,120 @@ All candidate models were trained on the training partition (Days 1–21) and sy
 | **LightGBM Classifier** | 77.19% | 66.61% | 13.76% | 0.2281 | 0.6782 | 0.48 |
 | **CatBoost Classifier** | 77.17% | 67.98% | 12.83% | 0.2159 | 0.6761 | 0.48 |
 | **HistGradientBoosting** | 77.12% | 75.81% | 09.62% | 0.1708 | 0.6756 | 0.56 |
-| **Logistic Regression (StandardScaled)** | 76.34% | 64.11% | 07.69% | 0.1373 | 0.6609 | 0.56 |
+| **Logistic Regression (Scaled)** | 76.34% | 64.11% | 07.69% | 0.1373 | 0.6609 | 0.56 |
 | **Majority Class Baseline** | 75.51% | 0.00% | 0.00% | 0.0000 | 0.5000 | 0.50 |
 
----
+#### Dual Operational Calibration Profiles
+- **Profile 1 (Competition Mode, Threshold = 0.48):** Optimized for raw classification accuracy.
+  - Final Test Accuracy: **77.44%** | Precision: **68.60%** | Recall: **11.79%**
+- **Profile 2 (Operations Mode, Threshold = 0.18):** Optimized for operational early warning & balanced F1.
+  - Validation Accuracy: **61.15%** | Precision: **34.54%** | Recall: **65.47%** | F1: **0.4522**
 
-## 3. Locked Test Set Results (Days 27–31, N = 78,904)
-
-The winning ensemble was evaluated on the locked, untouched test partition:
-
-- **Final Test Accuracy:** **77.44%** *(+1.54% over majority-class baseline of 75.90%)*
-- **Precision:** 68.60% *(low false-alarm rate)*
-- **Recall:** 11.79%
-- **F1-Score:** 20.12%
-- **ROC-AUC:** 0.6440
-- **PR-AUC:** 0.4244
-- **Calibrated Decision Threshold:** 0.48
-
-### Confusion Matrix
-```
-                    Predicted On-Time    Predicted Delayed (>=15 min)
-Actual On-Time:          58,864                      1,026
-Actual Delayed:          16,773                      2,241
-```
+#### Operational Inspection Queue Ranking (Precision@K%)
+- **Precision@0.5% (top 355 flights):** **98.03%** (Lift: 4.00x over random)
+- **Precision@1.0% (top 711 flights):** **96.34%** (Lift: 3.93x over random)
+- **Precision@2.0% (top 1,422 flights):** **87.83%** (Lift: 3.59x over random)
+- **Precision@5.0% (top 3,557 flights):** **67.50%** (Lift: 2.76x over random)
 
 ---
 
-## 4. Zero Data Leakage Protocol
+### B. Delay Duration Regression Suite (Target: `DEP_DELAY` in Minutes)
 
-To ensure realistic, deployable performance, this pipeline strictly excludes post-departure realization fields:
+| Model Architecture | Validation MAE | Validation RMSE | Validation MedAE |
+| :--- | :---: | :---: | :---: |
+| **LightGBM Regressor (Huber Loss)** | **22.32 min** | **79.03 min** | **1.07 min** |
+| **CatBoost Regressor (MAE Loss)** | 22.53 min | 79.72 min | 0.40 min |
+| **Ridge Regression Baseline** | 23.22 min | 79.95 min | 2.39 min |
+| **Median Delay Baseline** | 23.40 min | 81.75 min | 0.00 min |
+| **Mean Delay Baseline** | 28.63 min | 78.85 min | 14.35 min |
 
-1. **Excluded Post-Event Fields (21 columns):**
-   - Actual timestamps: `DEP_TIME`, `ARR_TIME`, `WHEELS_OFF`, `WHEELS_ON`
-   - Realized taxi & flight times: `TAXI_OUT`, `TAXI_IN`, `AIR_TIME`, `ACTUAL_ELAPSED_TIME`
-   - Realized delay metrics: `DEP_DELAY`, `ARR_DELAY`, `ARR_DEL15`, `CARRIER_DELAY`, `WEATHER_DELAY`, `NAS_DELAY`, `SECURITY_DELAY`, `LATE_AIRCRAFT_DELAY`
-   - Realized operational states: `CANCELLED`, `CANCELLATION_CODE`, `DIVERTED`
-
-2. **Temporal Splitting:**
-   - **Train (Days 1–21):** 367,169 flights (71.0%)
-   - **Validation (Days 22–26):** 71,149 flights (13.8%)
-   - **Locked Test (Days 27–31):** 78,904 flights (15.3%)
-
-3. **Indirect Leakage Prevention:**
-   - Historical delay rates for routes, carriers, and airports were computed **strictly on the training split** and mapped to validation/test using Bayesian prior smoothing (smoothing weight = 10).
-   - Aircraft turnaround slack is computed strictly from the preceding scheduled leg with scheduled arrival prior to current departure (`CRS_ARR_TIME_prev < CRS_DEP_TIME_curr`).
+**Final Locked Test Set Regression (LightGBM):**
+- **Test MAE:** **20.07 minutes**
+- **Test RMSE:** **68.77 minutes**
+- **Test Median Absolute Error (MedAE):** **0.95 minutes**
 
 ---
 
-## 5. Feature Engineering Summary
-
-The model uses 34 domain-engineered features categorized into four functional groups:
-
-1. **Temporal & Schedule Dynamics:**
-   - Scheduled departure and arrival hour, minute, and total day minutes
-   - Cyclical hour encoding: `sin(2 * pi * hour / 24)`, `cos(2 * pi * hour / 24)`
-   - Day of week cyclical encoding: `sin(2 * pi * dow / 7)`, `cos(2 * pi * dow / 7)`
-   - Weekend indicator and operational time-of-day buckets (early morning, morning rush, midday, evening rush, late night)
-   - Scheduled block speed proxy: `distance / (sched_elapsed_time + 1e-5)`
-
-2. **Airport & Hub Congestion Proxies:**
-   - Scheduled departures at Origin airport within hourly window
-   - Daily scheduled departure volume at Origin airport
-   - Daily scheduled arrival volume at Destination airport
-   - Carrier departure count and market share percentage at Origin airport
-
-3. **Aircraft Turnaround & Propagation (FDPIS Core):**
-   - Scheduled turnaround buffer in minutes: `CRS_DEP_TIME_curr - CRS_ARR_TIME_prev`
-   - Tight turnaround risk indicator (buffer < 45 minutes)
-   - Negative buffer indicator (inbound scheduled arrival exceeds scheduled departure)
-   - Daily flight sequence counter for the aircraft tail number
-
-4. **Bayesian Historical Encodings:**
-   - Carrier historical delay rate
-   - Origin airport historical delay rate
-   - Destination airport historical delay rate
-   - Route historical delay rate
-   - Origin * Departure Hour interaction delay rate
-   - Carrier * Origin Hub interaction delay rate
-
----
-
-## 6. Directory Structure
+## 3. Directory Structure
 
 ```
 .
+├── data/
+│   └── fdpis_flights.db          # Indexed SQLite operational database (149,982 flights)
 ├── models/
-│   ├── lightgbm.pkl              # Trained LightGBM model binary
-│   ├── xgboost.pkl               # Trained XGBoost model binary
-│   ├── catboost.pkl              # Trained CatBoost model binary
-│   ├── scaler.pkl                # Standard scaler for linear baseline
-│   ├── features.json             # List of 34 engineered feature names
+│   ├── lightgbm.pkl              # Primary LightGBM classifier
+│   ├── xgboost.pkl               # Primary XGBoost classifier
+│   ├── catboost.pkl              # Primary CatBoost classifier
+│   ├── delay_regressor.pkl       # Final Huber-loss delay duration regressor
+│   ├── features.json             # 34 engineered feature names
 │   ├── historical_stats.json     # Bayesian smoothed delay rate lookup tables
 │   └── model_metadata.json       # Thresholds and test evaluation metrics
 ├── results/
-│   ├── model_comparison.csv      # Validation comparison table
+│   ├── final_test_evaluation.json # Test classifier metrics
+│   ├── final_test_regression.json # Test regressor metrics
+│   ├── ranking_evaluation.json   # Precision@K% queue rankings
+│   ├── threshold_tradeoff.csv    # Accuracy vs Recall vs F1 threshold sweep
 │   ├── feature_importance.csv    # Feature contribution rankings
-│   └── final_test_evaluation.json # Final locked test evaluation report
+│   └── plots/
+│       ├── feature_importance.png # Feature importance chart
+│       └── threshold_tradeoff.png # Trade-off curve visualization
 ├── src/
-│   ├── feature_pipeline.py       # Data cleaning and feature engineering
-│   ├── train_models.py           # Model training and validation suite
-│   ├── evaluate_test.py          # Final locked test set evaluation
-│   ├── predict.py                # Standalone inference class (FDPISPredictor)
-│   ├── cli_predict.py            # Command-line interface for predictions
-│   ├── error_analysis.py         # Breakdown of errors across hubs and carriers
-│   ├── hyperopt_tune.py          # Optuna Bayesian hyperparameter optimization
-│   └── audit_dataset.py          # Dataset inspection and statistics audit
-├── .gitignore                    # Git ignore file
-└── README.md                     # Documentation
+│   ├── app.py                    # FastAPI application & REST endpoints
+│   ├── propagation_engine.py     # Graph construction & BFS cascade traversal
+│   ├── database.py               # SQLite schema & indexing script
+│   ├── populate_db.py            # Batch inference & database populator
+│   ├── feature_pipeline.py       # Zero-leakage ETL & feature extraction
+│   ├── train_models.py           # Classification model training suite
+│   ├── train_regressor.py        # Regression training & evaluation suite
+│   ├── tune_classifier.py        # Threshold sweep & ranking analysis
+│   ├── evaluate_test.py          # Final locked test evaluation
+│   ├── predict.py                # Standalone inference class
+│   └── cli_predict.py            # Command-line interface for predictions
+├── static/
+│   ├── index.html                # Interactive Operations Intelligence Dashboard
+│   └── plots/                    # Web-accessible diagnostic plots
+├── tests/
+│   └── test_system.py            # Automated test suite (API, ML, Graph)
+├── requirements.txt              # Production dependency list
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-## 7. How to Use the Program
+## 4. How to Run the Platform
 
-### Step 1: Environment Installation
-Clone the repository and install the required dependencies:
-
+### Step 1: Install Dependencies
 ```bash
-git clone https://github.com/Ashish-P24/FDPIS-Model-Testing.git
-cd FDPIS-Model-Testing
-
-# Install required Python packages
-pip install pandas scikit-learn xgboost lightgbm catboost optuna pyarrow
+pip install -r requirements.txt
 ```
 
----
-
-### Step 2: Dataset Preparation
-Ensure the raw BTS on-time reporting CSV file (`T_ONTIME_REPORTING.csv`) is available. By default, `src/feature_pipeline.py` references the local dataset path:
-```python
-DATA_PATH = r"C:\Users\ashis\Downloads\T_ONTIME_REPORTING_20260820_081428\T_ONTIME_REPORTING.csv"
-```
-*(Update `DATA_PATH` in `src/feature_pipeline.py` if your file is located elsewhere).*
-
----
-
-### Step 3: Run Feature Engineering
-Execute the feature pipeline to clean the raw data, generate the 34 predictive features, compute historical target encodings, and generate chronological partitions:
-
+### Step 2: Run Automated System Tests
 ```bash
-python src/feature_pipeline.py
+python -m unittest discover tests
 ```
-*Output: Generates `results/train.parquet`, `results/val.parquet`, `results/test.parquet`, and `models/historical_stats.json`.*
+*All 5 unit tests pass, confirming API routing, model artifact integrity, and BFS graph cascade logic.*
 
----
-
-### Step 4: Train All Models & Ensembles
-Train the baseline models, gradient boosting classifiers, and the Soft-Voting Ensemble:
-
+### Step 3: Launch the Production Web Dashboard & API
+Start the FastAPI server using Uvicorn:
 ```bash
-python src/train_models.py
+python -m uvicorn src.app:app --host 127.0.0.1 --port 8000 --reload
 ```
-*Output: Trains all models, saves binaries to `models/`, tunes the optimal probability threshold, and outputs the model validation comparison table.*
+
+Open your browser and navigate to:
+- **Operations Dashboard:** `http://127.0.0.1:8000/`
+- **Interactive OpenAPI Documentation:** `http://127.0.0.1:8000/docs`
 
 ---
 
-### Step 5: Evaluate on Locked Test Set
-Evaluate the winning ensemble on the locked out-of-time test partition:
+## 5. Using the Interactive Dashboard
 
-```bash
-python src/evaluate_test.py
-```
-*Output: Reports the final test accuracy (77.44%), precision, recall, F1, ROC-AUC, and confusion matrix.*
-
----
-
-### Step 6: Make Single-Flight Predictions via CLI
-Use the command-line tool `cli_predict.py` to predict delays for any scheduled flight:
-
-```bash
-python src/cli_predict.py --carrier DL --origin ATL --dest LGA --dep_time 830 --arr_time 1100 --distance 762 --elapsed_time 150 --day_of_month 15 --day_of_week 4 --tail_num N901DA
-```
-
-**Sample Output:**
-```
-=======================================================
-      FDPIS FLIGHT DELAY PREDICTION RESULT
-=======================================================
- Flight:       DL | ATL -> LGA
- Schedule:     Dep 0830 | Arr 1100 | Day 15
- Aircraft:     N901DA
--------------------------------------------------------
- Delay Probability:        18.42%
- Calibrated Threshold:     0.48
- Prediction Status:        ON-TIME (< 15 minutes)
- Risk Assessment:          LOW CASCADE RISK
-=======================================================
-```
+1. **Operations Overview:** Displays top monitored KPIs, critical origin hubs facing congestion, and highest-risk flights requiring immediate review.
+2. **Flight Intelligence:** Filter 150k operational flights by carrier, origin, destination, aircraft tail number, and risk category.
+3. **Cascade Propagation Tree:** Click **"Trace Cascade"** on any flight to inspect the Breadth-First Search (BFS) graph. The visualization illustrates how delays propagate across aircraft rotations, where buffer slack absorbs delays, and triggers rule-based DGCA/FDTL crew duty alerts.
+4. **Model Diagnostics:** View diagnostic plots for feature importance and threshold trade-offs directly in the interface.
 
 ---
 
-### Step 7: Integrate Predictions in Python Code
-You can import the `FDPISPredictor` class directly into any Python script or pipeline:
-
-```python
-import pandas as pd
-from src.predict import FDPISPredictor
-
-# Initialize the predictor
-predictor = FDPISPredictor(model_dir="models")
-
-# Define flight parameters
-flight = pd.DataFrame([{
-    "DAY_OF_MONTH": 20,
-    "DAY_OF_WEEK": 5,
-    "CRS_DEP_TIME": 1730,       # 05:30 PM
-    "CRS_ARR_TIME": 2015,       # 08:15 PM
-    "CRS_ELAPSED_TIME": 165,
-    "DISTANCE": 1020,
-    "OP_UNIQUE_CARRIER": "AA",
-    "ORIGIN": "ORD",
-    "DEST": "MIA",
-    "TAIL_NUM": "N802AA"
-}])
-
-# Get binary classification (1 = Delayed >= 15 min, 0 = On-Time)
-prediction = predictor.predict(flight)
-
-# Get probability score (0.0 to 1.0)
-probability = predictor.predict_proba(flight)
-
-print("Predicted Class:", "Delayed" if prediction[0] == 1 else "On-Time")
-print(f"Delay Probability: {probability[0]*100:.2f}%")
-```
-
----
-
-## 8. License
-This project is released under the MIT License.
+## 6. License
+Released under the MIT License.

@@ -3,10 +3,13 @@
 *.parquet
 *.zip
 *.tar.gz
+*.db
+catboost_info/
 
 # Retain results, metrics, feature maps, and models
 !results/*.json
 !results/*.csv
+!results/plots/*
 !models/*.json
 !models/*.pkl
 
