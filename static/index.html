@@ -4,23 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FDPIS — Flight Delay Propagation Intelligence System</title>
-    <!-- Modern typography & Vis.js for Network Graph -->
+    <!-- Modern Typography: Inter + JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         :root {
-            --bg-primary: #0b0f19;
-            --bg-surface: #111827;
-            --bg-card: #1e293b;
-            --border-color: #334155;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-cyan: #06b6d4;
-            --danger-red: #ef4444;
-            --warning-amber: #f59e0b;
-            --success-green: #10b981;
+            /* Aviation Light Theme Palette */
+            --bg-base: #f1f5f9;          /* Slate 100 base */
+            --bg-surface: #ffffff;       /* Pure white panels */
+            --bg-subtle: #f8fafc;        /* Slate 50 for table headers & input backgrounds */
+            --bg-header: #0f172a;        /* Deep navy command header */
+            --border-main: #e2e8f0;      /* Slate 200 border */
+            --border-subtle: #cbd5e1;    /* Slate 300 divider */
+            --text-main: #0f172a;        /* Slate 900 text */
+            --text-secondary: #475569;   /* Slate 600 text */
+            --text-muted: #64748b;       /* Slate 500 captions */
+            
+            /* Functional Operational Colors */
+            --navy-primary: #1e3a8a;     /* Deep Aeronautical Navy */
+            --blue-accent: #0284c7;      /* Sky Blue Accent */
+            --red-delay: #dc2626;        /* High Risk / Cascade Impact */
+            --amber-watch: #d97706;      /* Elevated / Turnaround Warning */
+            --green-normal: #16a34a;     /* Normal / Absorbed */
+            
+            --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+            --shadow-panel: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.04);
         }
 
         * {
@@ -30,126 +39,172 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.5;
-            overflow-x: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Top Navigation Header */
+        /* Top Command Navigation Header */
         header {
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
+            background-color: var(--bg-header);
+            color: #ffffff;
+            padding: 0 1.5rem;
+            height: 62px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             position: sticky;
             top: 0;
-            z-index: 50;
+            z-index: 100;
+            border-bottom: 2px solid #1e293b;
         }
 
-        .logo-group {
+        .header-brand {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .logo-badge {
-            background: linear-gradient(135deg, #1d4ed8, #0284c7);
-            color: white;
+        .header-logo-badge {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #38bdf8;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
             font-weight: 700;
             padding: 4px 8px;
             border-radius: 4px;
-            letter-spacing: 1px;
-        }
-
-        .system-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .system-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 8px;
-        }
-
-        .nav-tab {
-            background: none;
-            border: 1px solid transparent;
-            color: var(--text-secondary);
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .nav-tab:hover {
-            color: var(--text-primary);
-            background-color: var(--bg-card);
-        }
-
-        .nav-tab.active {
-            color: var(--text-primary);
-            background-color: var(--bg-card);
-            border-color: var(--border-color);
-            font-weight: 600;
-        }
-
-        /* Main Content Layout */
-        main {
-            padding: 2rem;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        /* KPI Section */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .kpi-card {
-            background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.25rem;
-        }
-
-        .kpi-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
         }
 
-        .kpi-val {
-            font-size: 1.75rem;
+        .header-titles {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            font-size: 1.05rem;
             font-weight: 700;
+            letter-spacing: -0.2px;
+            color: #ffffff;
+        }
+
+        .header-subtitle {
+            font-size: 0.72rem;
+            color: #94a3b8;
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .kpi-sub {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
+        .header-nav {
+            display: flex;
+            gap: 4px;
+            height: 100%;
+            align-items: center;
         }
 
-        /* Views */
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-btn:hover {
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+
+        .nav-btn.active {
+            background-color: #0284c7;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .header-status-group {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .header-search {
+            position: relative;
+        }
+
+        .header-search input {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #ffffff;
+            padding: 6px 12px 6px 28px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            width: 200px;
+        }
+
+        .header-search input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            background: #0f172a;
+        }
+
+        .header-search-icon {
+            position: absolute;
+            left: 9px;
+            top: 7px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .header-telemetry {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .telemetry-utc {
+            color: #38bdf8;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .system-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #4ade80;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .system-pill-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #4ade80;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #4ade80;
+        }
+
+        /* App Container */
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* View Sections */
         .view-section {
             display: none;
         }
@@ -158,186 +213,400 @@
             display: block;
         }
 
-        /* Panels */
+        /* Flight Operations Hero Banner (Light Aviation Styling) */
+        .ops-brief-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #334155;
+            box-shadow: var(--shadow-panel);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brief-headline h1 {
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .brief-headline p {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            max-width: 600px;
+        }
+
+        .brief-kpi-row {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .brief-kpi-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brief-kpi-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .brief-kpi-label {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Panel Component */
         .panel {
             background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
+            border: 1px solid var(--border-main);
+            border-radius: 6px;
+            box-shadow: var(--shadow-subtle);
             margin-bottom: 1.5rem;
+            overflow: hidden;
         }
 
         .panel-header {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--border-color);
+            background-color: #ffffff;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--border-main);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .panel-title {
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
-        /* Table */
-        .table-container {
+        .panel-subtitle {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Tables (Airport Departure Board Precision Style) */
+        .table-responsive {
             overflow-x: auto;
-            max-height: 520px;
         }
 
-        table {
+        table.ops-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             text-align: left;
         }
 
-        th {
-            background-color: var(--bg-card);
-            padding: 10px 14px;
-            font-weight: 600;
+        table.ops-table th {
+            background-color: var(--bg-subtle);
             color: var(--text-secondary);
-            position: sticky;
-            top: 0;
-            border-bottom: 1px solid var(--border-color);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.73rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-main);
+            border-top: 1px solid var(--border-main);
+            white-space: nowrap;
         }
 
-        td {
-            padding: 10px 14px;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        table.ops-table td {
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border-main);
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.8rem;
+            color: var(--text-main);
+            vertical-align: middle;
+            white-space: nowrap;
         }
 
-        tr:hover {
-            background-color: rgba(30, 41, 59, 0.7);
+        table.ops-table tr:hover td {
+            background-color: #f8fafc;
             cursor: pointer;
         }
 
-        /* Badges */
+        /* Status & Risk Badges */
         .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
         }
 
         .badge-high {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger-red);
-            border: 1px solid var(--danger-red);
+            background-color: #fee2e2;
+            color: var(--red-delay);
+            border: 1px solid #fca5a5;
         }
 
-        .badge-elevated {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warning-amber);
-            border: 1px solid var(--warning-amber);
+        .badge-watch {
+            background-color: #fef3c7;
+            color: var(--amber-watch);
+            border: 1px solid #fcd34d;
         }
 
         .badge-normal {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success-green);
-            border: 1px solid var(--success-green);
+            background-color: #dcfce7;
+            color: var(--green-normal);
+            border: 1px solid #86efac;
         }
 
-        /* Form Inputs */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            padding: 1.5rem;
+        .badge-code {
+            background-color: #f1f5f9;
+            color: var(--navy-primary);
+            border: 1px solid var(--border-main);
+            font-weight: 600;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
+        /* Button Elements */
+        .btn-ops {
+            background-color: var(--navy-primary);
+            color: #ffffff;
+            border: 1px solid #1e3a8a;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
             gap: 6px;
         }
 
-        .form-group label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            font-weight: 600;
+        .btn-ops:hover {
+            background-color: #1e40af;
         }
 
-        .form-group input, .form-group select {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 9px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
-
-        .btn-action {
-            background-color: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn-action:hover {
-            opacity: 0.9;
-        }
-
-        /* Predict Output Cards */
-        .prediction-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            padding: 1.25rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .reason-card {
-            background: rgba(30, 41, 59, 0.6);
-            border-left: 3px solid var(--accent-blue);
-            padding: 10px 14px;
+        .btn-outline {
+            background-color: #ffffff;
+            color: var(--text-main);
+            border: 1px solid var(--border-main);
+            padding: 5px 10px;
             border-radius: 4px;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
         }
 
-        /* Propagation Tree View */
-        .propagation-view {
+        .btn-outline:hover {
+            background-color: var(--bg-subtle);
+            border-color: var(--border-subtle);
+        }
+
+        /* Grid Layouts */
+        .grid-2col {
             display: grid;
-            grid-template-columns: 340px 1fr;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .grid-3col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .grid-overview-main {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1.5rem;
+        }
+
+        /* Network Hub Map SVG Container */
+        .map-container {
+            width: 100%;
+            height: 380px;
+            background-color: #f8fafc;
+            border-radius: 4px;
+            position: relative;
+            border: 1px solid var(--border-main);
+        }
+
+        #us-network-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .airport-node {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .airport-node:hover circle {
+            stroke-width: 3px;
+        }
+
+        /* Alerts Feed */
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 1rem;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 10px;
+            background-color: #ffffff;
+            border: 1px solid var(--border-main);
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .alert-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            padding-top: 2px;
+        }
+
+        .alert-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .alert-dot.high { background-color: var(--red-delay); }
+        .alert-dot.watch { background-color: var(--amber-watch); }
+        .alert-dot.normal { background-color: var(--green-normal); }
+
+        /* Flight Timeline (Aircraft Rotation View) */
+        .rotation-timeline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            background-color: var(--bg-subtle);
+            border-radius: 6px;
+            border: 1px solid var(--border-main);
+            margin-bottom: 1.5rem;
+        }
+
+        .leg-node {
+            background-color: #ffffff;
+            border: 1px solid var(--border-main);
+            border-radius: 6px;
+            padding: 10px 14px;
+            min-width: 170px;
+            box-shadow: var(--shadow-subtle);
+            position: relative;
+        }
+
+        .leg-node.selected {
+            border: 2px solid var(--blue-accent);
+            background-color: #f0f9ff;
+        }
+
+        .leg-node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .leg-flight-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--navy-primary);
+        }
+
+        .leg-route {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .leg-times {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .turn-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+
+        .turn-line {
+            width: 45px;
+            height: 2px;
+            background-color: var(--border-subtle);
+            position: relative;
+            margin: 4px 0;
+        }
+
+        .turn-tag {
+            background-color: #ffffff;
+            border: 1px solid var(--border-main);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        .turn-tag.tight {
+            border-color: #fca5a5;
+            background-color: #fee2e2;
+            color: var(--red-delay);
+        }
+
+        /* Propagation Vis.js Container */
+        .propagation-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
             gap: 1.5rem;
             height: 720px;
         }
 
-        #network-graph {
-            width: 100%;
-            height: 100%;
-            background-color: #0d1321;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .flight-sidebar {
+        .prop-sidebar {
             background-color: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border: 1px solid var(--border-main);
+            border-radius: 6px;
             padding: 1.25rem;
             overflow-y: auto;
             display: flex;
@@ -345,577 +614,1060 @@
             gap: 1rem;
         }
 
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.4);
-            font-size: 0.85rem;
+        #propagation-graph-canvas {
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            border: 1px solid var(--border-main);
+            border-radius: 6px;
         }
 
-        .rec-box {
-            background-color: rgba(239, 68, 68, 0.1);
-            border-left: 3px solid var(--danger-red);
-            padding: 10px;
+        /* Flight Input / Prediction Form */
+        .form-flight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            padding: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input, .form-group select {
+            background-color: #ffffff;
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            padding: 8px 10px;
             border-radius: 4px;
-            font-size: 0.8rem;
-            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--blue-accent);
+            box-shadow: 0 0 0 2px rgb(2 132 199 / 0.15);
+        }
+
+        /* Detail Dossier Styling */
+        .dossier-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.25rem;
+        }
+
+        .dossier-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px 0;
+            border-bottom: 1px solid var(--border-main);
+            font-size: 0.83rem;
+        }
+
+        .dossier-label {
+            color: var(--text-secondary);
+        }
+
+        .dossier-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Diagnostics / Model Insights Images */
+        .diagnostic-card {
+            background-color: #ffffff;
+            border: 1px solid var(--border-main);
+            border-radius: 6px;
+            padding: 1.25rem;
+        }
+
+        .diagnostic-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid var(--border-main);
+        }
+
+        /* Histogram Bar Chart (Pure CSS/SVG) */
+        .histogram-container {
+            padding: 1.25rem;
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            height: 180px;
+            border-bottom: 1px solid var(--border-main);
+        }
+
+        .histo-bar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .histo-bar {
+            width: 100%;
+            background-color: #0284c7;
+            border-radius: 2px 2px 0 0;
+            transition: height 0.3s ease;
+        }
+
+        .histo-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
 
+<!-- Header / Command Navigation Bar -->
 <header>
-    <div class="logo-group">
-        <span class="logo-badge">FDPIS v2.0</span>
-        <div>
-            <div class="system-title">Flight Delay Propagation Intelligence System</div>
-            <div class="system-subtitle">Dual ML Predictor & Multi-Leg Rotation Cascade Platform</div>
+    <div class="header-brand">
+        <span class="header-logo-badge">FDPIS</span>
+        <div class="header-titles">
+            <span class="header-title">FLIGHT OPERATIONS INTELLIGENCE SYSTEM</span>
+            <span class="header-subtitle">US BTS ON-TIME CASCADE ENGINE</span>
         </div>
     </div>
-    <div class="nav-tabs">
-        <button class="nav-tab active" onclick="switchView('input-flight')">+ Add & Predict Flight</button>
-        <button class="nav-tab" onclick="switchView('overview')">Operations Overview</button>
-        <button class="nav-tab" onclick="switchView('flights')">Flight Intelligence</button>
-        <button class="nav-tab" onclick="switchView('propagation')">Multi-Leg Cascade Tree</button>
-        <button class="nav-tab" onclick="switchView('insights')">Model Diagnostics</button>
+
+    <nav class="header-nav">
+        <button class="nav-btn active" onclick="switchTab('overview')">Overview</button>
+        <button class="nav-btn" onclick="switchTab('flights')">Flights</button>
+        <button class="nav-btn" onclick="switchTab('dossier')">Flight Intelligence</button>
+        <button class="nav-btn" onclick="switchTab('propagation')">Propagation</button>
+        <button class="nav-btn" onclick="switchTab('network')">Network</button>
+        <button class="nav-btn" onclick="switchTab('analytics')">Analytics</button>
+        <button class="nav-btn" onclick="switchTab('models')">Model Insights</button>
+    </nav>
+
+    <div class="header-status-group">
+        <div class="header-search">
+            <span class="header-search-icon">🔍</span>
+            <input type="text" id="global-flight-search" placeholder="Search Flight / Tail..." onkeydown="if(event.key==='Enter') globalSearchFlight()">
+        </div>
+        <div class="header-telemetry">
+            <span class="telemetry-utc" id="live-utc-clock">--:--:-- UTC</span>
+            <div class="system-pill">
+                <span class="system-pill-dot"></span> SYSTEM ONLINE (V2.0)
+            </div>
+        </div>
     </div>
 </header>
 
-<main>
-    <!-- Top Level Operational KPIs -->
-    <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-label">Monitored Fleet Schedule</div>
-            <div class="kpi-val" id="kpi-total">149,982</div>
-            <div class="kpi-sub">Verified BTS Commercial Flights</div>
+<div class="app-container">
+
+    <!-- 1. OPERATIONS BRIEFING BANNER -->
+    <div class="ops-brief-banner">
+        <div class="brief-headline">
+            <h1>From Disruptions to Decisions</h1>
+            <p>Predicting flight delays. Understanding downstream rotation impact. Keeping the commercial network moving.</p>
         </div>
-        <div class="kpi-card" style="border-left: 4px solid var(--danger-red);">
-            <div class="kpi-label">High Cascade Risk</div>
-            <div class="kpi-val" id="kpi-high" style="color: var(--danger-red);">--</div>
-            <div class="kpi-sub">Probability ≥ 40% (Immediate Review)</div>
-        </div>
-        <div class="kpi-card" style="border-left: 4px solid var(--warning-amber);">
-            <div class="kpi-label">Elevated Risk</div>
-            <div class="kpi-val" id="kpi-elevated" style="color: var(--warning-amber);">--</div>
-            <div class="kpi-sub">Probability 20% - 40%</div>
-        </div>
-        <div class="kpi-card" style="border-left: 4px solid var(--success-green);">
-            <div class="kpi-label">Normal Schedule</div>
-            <div class="kpi-val" id="kpi-normal" style="color: var(--success-green);">--</div>
-            <div class="kpi-sub">Expected On-Time Departures</div>
+        <div class="brief-kpi-row">
+            <div class="brief-kpi-item">
+                <span class="brief-kpi-val" id="kpi-total">149,982</span>
+                <span class="brief-kpi-label">Monitored Flights</span>
+            </div>
+            <div class="brief-kpi-item">
+                <span class="brief-kpi-val" id="kpi-at-risk" style="color: #f87171;">--</span>
+                <span class="brief-kpi-label">High Delay Risk (≥40%)</span>
+            </div>
+            <div class="brief-kpi-item">
+                <span class="brief-kpi-val" id="kpi-prop-chains" style="color: #fbbf24;">3,932</span>
+                <span class="brief-kpi-label">Potential Propagations</span>
+            </div>
+            <div class="brief-kpi-item">
+                <span class="brief-kpi-val" id="kpi-precision" style="color: #38bdf8;">96.3%</span>
+                <span class="brief-kpi-label">Model Precision@1%</span>
+            </div>
         </div>
     </div>
 
-    <!-- VIEW 0: ADD NEW FLIGHT & PREDICT -->
-    <section id="view-input-flight" class="view-section active">
-        <div class="panel">
-            <div class="panel-header">
-                <div class="panel-title">Add Scheduled Flight for Delay & Multi-Leg Cascade Prediction</div>
-                <span class="badge badge-normal">Live ML Inference + Dataset Rotation Matching</span>
-            </div>
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="view-section active">
+        <div class="grid-overview-main">
             
-            <form id="new-flight-form" onsubmit="event.preventDefault(); submitFlightPrediction();">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Carrier Code</label>
-                        <input type="text" id="in-carrier" value="DL" required maxlength="3">
-                    </div>
-                    <div class="form-group">
-                        <label>Origin Airport</label>
-                        <input type="text" id="in-origin" value="ATL" required maxlength="3">
-                    </div>
-                    <div class="form-group">
-                        <label>Destination Airport</label>
-                        <input type="text" id="in-dest" value="LGA" required maxlength="3">
-                    </div>
-                    <div class="form-group">
-                        <label>Aircraft Tail No.</label>
-                        <input type="text" id="in-tail" value="N477AS" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Sched Dep (HHMM)</label>
-                        <input type="number" id="in-dep-time" value="600" min="0" max="2359" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Sched Arr (HHMM)</label>
-                        <input type="number" id="in-arr-time" value="639" min="0" max="2359" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Flight Distance (mi)</label>
-                        <input type="number" id="in-distance" value="762" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Turnaround Buffer (min)</label>
-                        <input type="number" id="in-buffer" value="30" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Day of Month</label>
-                        <input type="number" id="in-day" value="27" min="1" max="31" required>
-                    </div>
-                    <div class="form-group" style="justify-content: flex-end;">
-                        <button type="submit" class="btn-action" style="height: 42px;">Forecast Delay & Downstream Cascade</button>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Results Display Container -->
-            <div id="prediction-results-panel" style="display: none;">
-                <div class="prediction-summary">
-                    <div>
-                        <div class="kpi-label">Delay Probability (DEP_DEL15)</div>
-                        <div class="kpi-val" id="res-prob" style="color: var(--accent-blue);">--</div>
-                    </div>
-                    <div>
-                        <div class="kpi-label">Risk Category</div>
-                        <div id="res-risk-badge" style="margin-top: 4px;">--</div>
-                    </div>
-                    <div>
-                        <div class="kpi-label">Predicted Delay Duration</div>
-                        <div class="kpi-val" id="res-delay-mins" style="color: var(--warning-amber);">--</div>
-                    </div>
-                    <div>
-                        <div class="kpi-label">Estimated Actual Arrival</div>
-                        <div class="kpi-val" id="res-est-arr" style="color: var(--text-primary);">--</div>
-                        <div class="kpi-sub" id="res-sched-arr">Scheduled: --</div>
-                    </div>
-                </div>
-
-                <div style="padding: 1.25rem;">
-                    <h4 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-secondary);">EXPLAINABILITY: WHY IS THIS FLIGHT AT RISK?</h4>
-                    <div id="res-reasons-container"></div>
-
-                    <h4 style="font-size: 0.9rem; margin: 18px 0 10px 0; color: var(--text-secondary);">
-                        DOWNSTREAM AIRCRAFT ROTATION (HOW DELAY ACCUMULATES ACROSS SUBSEQUENT FLIGHTS)
-                    </h4>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Flight Leg</th>
-                                    <th>Route</th>
-                                    <th>Sched Dep</th>
-                                    <th>Sched Arr</th>
-                                    <th>Est. Actual Arr</th>
-                                    <th>Ground Turn Gap</th>
-                                    <th>Absorbable Slack</th>
-                                    <th>Incoming Delay</th>
-                                    <th>Residual Delay Passed</th>
-                                    <th>Downstream Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rotation-cascade-tbody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- VIEW 1: OPERATIONS OVERVIEW -->
-    <section id="view-overview" class="view-section">
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+            <!-- Left Column: High-Priority Departure Queue -->
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title">Highest Risk Scheduled Departures (Immediate OCC Attention)</div>
-                    <span class="badge badge-high">Actionable Queue</span>
+                    <div class="panel-title">
+                        <span>⚠️ High-Priority Flights Under Delay Risk</span>
+                    </div>
+                    <button class="btn-outline" onclick="switchTab('flights')">View All Flights →</button>
                 </div>
-                <div class="table-container">
-                    <table>
+                <div class="table-responsive">
+                    <table class="ops-table">
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>Flight ID</th>
                                 <th>Carrier</th>
                                 <th>Route</th>
-                                <th>Tail No</th>
-                                <th>Sched Dep</th>
-                                <th>Delay Risk</th>
-                                <th>Exp Delay</th>
-                                <th>Action</th>
+                                <th>STD</th>
+                                <th>STA</th>
+                                <th>Aircraft</th>
+                                <th>Risk Score</th>
+                                <th>Pred Delay</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody id="overview-table-body"></tbody>
+                        <tbody id="overview-priority-tbody">
+                            <!-- Populated via JS from API -->
+                        </tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- Right Column: Interactive Network Risk Map -->
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title">Critical Origin Hubs Under Pressure</div>
+                    <div class="panel-title">
+                        <span>✈️ Network Hub Risk Map</span>
+                    </div>
+                    <span class="panel-subtitle">Origin Hub Delay Index</span>
                 </div>
-                <div style="padding: 1rem;">
-                    <table style="width: 100%;">
+                <div class="map-container">
+                    <svg id="us-network-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <!-- US Continental Map Outline Representation -->
+                        <path d="M 8 14 L 38 12 L 63 15 L 89 20 L 96 26 L 90 40 L 83 75 L 80 88 L 72 75 L 53 78 L 24 64 L 12 55 L 7 38 Z" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="0.75" />
+                        
+                        <!-- Route Arc Lines -->
+                        <g id="map-route-arcs"></g>
+                        <!-- Airport Hub Nodes -->
+                        <g id="map-hub-nodes"></g>
+                    </svg>
+                </div>
+                <div style="padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; background: #ffffff; border-top: 1px solid var(--border-main);">
+                    <div style="display: flex; gap: 14px; font-size: 0.72rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--red-delay);"></span> High Risk</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber-watch);"></span> Watch</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--green-normal);"></span> Normal</span>
+                    </div>
+                    <button class="btn-outline" onclick="switchTab('network')">Open Network View →</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Lower Section: 3-column operational insight -->
+        <div class="grid-3col">
+            <!-- Delay Risk Distribution Histogram -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">📊 Delay Risk Distribution</div>
+                    <span class="panel-subtitle">P(DEP_DEL15)</span>
+                </div>
+                <div class="histogram-container" id="overview-histogram">
+                    <!-- Pure CSS/SVG Bars -->
+                </div>
+                <div style="padding: 0.75rem 1rem; font-size: 0.75rem; color: var(--text-muted);">
+                    Most commercial flights operate within standard buffers (<0.20), with a long tail of high-risk cascade rotations.
+                </div>
+            </div>
+
+            <!-- Top Risky Airports -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">🏢 Critical Origin Hubs</div>
+                    <span class="panel-subtitle">Congestion Queue</span>
+                </div>
+                <div class="table-responsive" style="max-height: 250px;">
+                    <table class="ops-table">
                         <thead>
                             <tr>
                                 <th>Hub</th>
+                                <th>Airport</th>
                                 <th>Flights</th>
                                 <th>High Risk</th>
                                 <th>Avg Risk</th>
                             </tr>
                         </thead>
-                        <tbody id="hubs-table-body"></tbody>
+                        <tbody id="overview-hubs-tbody"></tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Recent Live Operational Alerts -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">🔔 Operational Dispatch Feed</div>
+                    <span class="panel-subtitle">Rule Alerts (DGCA/FDTL)</span>
+                </div>
+                <div class="alerts-list" id="overview-alerts-feed"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 2: FLIGHTS OPERATIONS TABLE -->
+    <section id="tab-flights" class="view-section">
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">✈️ Commercial Flight Operations Table</div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-ops" onclick="fetchFlightsTable()">Refresh List</button>
+                </div>
+            </div>
+
+            <!-- Search & Filter Controls -->
+            <div style="padding: 0.85rem 1.25rem; background-color: var(--bg-subtle); border-bottom: 1px solid var(--border-main); display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <input type="text" id="filter-flight-id" placeholder="Flight / Tail..." style="padding: 6px 10px; border: 1px solid var(--border-main); border-radius: 4px; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; width: 140px;">
+                <input type="text" id="filter-carrier" placeholder="Carrier (DL, UA, AA)" style="padding: 6px 10px; border: 1px solid var(--border-main); border-radius: 4px; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; width: 130px;">
+                <input type="text" id="filter-origin" placeholder="Origin (e.g. ATL)" style="padding: 6px 10px; border: 1px solid var(--border-main); border-radius: 4px; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; width: 110px;">
+                <input type="text" id="filter-dest" placeholder="Dest (e.g. LGA)" style="padding: 6px 10px; border: 1px solid var(--border-main); border-radius: 4px; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; width: 110px;">
+                <select id="filter-risk" style="padding: 6px 10px; border: 1px solid var(--border-main); border-radius: 4px; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;">
+                    <option value="">All Risk Levels</option>
+                    <option value="HIGH">High Risk (≥40%)</option>
+                    <option value="ELEVATED">Watch (20-40%)</option>
+                    <option value="NORMAL">Normal (<20%)</option>
+                </select>
+                <button class="btn-ops" onclick="fetchFlightsTable()">Apply Filters</button>
+                <button class="btn-outline" onclick="resetFlightFilters()">Reset</button>
+            </div>
+
+            <!-- Main Flights Table -->
+            <div class="table-responsive">
+                <table class="ops-table">
+                    <thead>
+                        <tr>
+                            <th>Flight ID</th>
+                            <th>Airline</th>
+                            <th>Aircraft</th>
+                            <th>Origin</th>
+                            <th>Dest</th>
+                            <th>STD (Sched Dep)</th>
+                            <th>STA (Sched Arr)</th>
+                            <th>Distance</th>
+                            <th>Risk Score</th>
+                            <th>Predicted Delay</th>
+                            <th>Actual Outcome</th>
+                            <th>Operations Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-flights-tbody">
+                        <!-- Populated via API -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="padding: 0.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; background: #ffffff; border-top: 1px solid var(--border-main); font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                <span>Showing verified operational flight records (Jan 2026 test partition)</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-outline" onclick="changeFlightPage(-1)">Previous</button>
+                    <button class="btn-outline" onclick="changeFlightPage(1)">Next</button>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- VIEW 2: FLIGHT INTELLIGENCE -->
-    <section id="view-flights" class="view-section">
-        <div class="panel" style="padding: 1rem;">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="text" id="filter-carrier" placeholder="Carrier (e.g. DL, AA)" style="background:var(--bg-card); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:6px; font-size:0.85rem; width:130px;">
-                <input type="text" id="filter-origin" placeholder="Origin (e.g. ATL)" style="background:var(--bg-card); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:6px; font-size:0.85rem; width:130px;">
-                <input type="text" id="filter-dest" placeholder="Destination (e.g. LGA)" style="background:var(--bg-card); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:6px; font-size:0.85rem; width:130px;">
-                <input type="text" id="filter-tail" placeholder="Tail No (e.g. N477AS)" style="background:var(--bg-card); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:6px; font-size:0.85rem; width:140px;">
-                <select id="filter-risk" style="background:var(--bg-card); border:1px solid var(--border-color); color:white; padding:8px 12px; border-radius:6px; font-size:0.85rem;">
-                    <option value="">All Risk Levels</option>
-                    <option value="HIGH">High Risk Only</option>
-                    <option value="ELEVATED">Elevated Risk Only</option>
-                    <option value="NORMAL">Normal Risk Only</option>
-                </select>
-                <button class="btn-action" onclick="fetchFlights()">Filter Flights</button>
+    <!-- TAB 3: FLIGHT INTELLIGENCE (DOSSIER & PREDICTOR) -->
+    <section id="tab-dossier" class="view-section">
+        <div class="grid-2col">
+            
+            <!-- Left: Interactive Custom Flight Predictor -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">⚡ Interactive Schedule Delay Predictor</div>
+                    <span class="panel-subtitle">Dual Model (LGBM + Regressor)</span>
+                </div>
+                <form id="custom-predict-form" onsubmit="event.preventDefault(); submitCustomFlight();">
+                    <div class="form-flight-grid">
+                        <div class="form-group">
+                            <label>Carrier Code</label>
+                            <input type="text" id="dossier-carrier" value="DL" required maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>Origin Airport</label>
+                            <input type="text" id="dossier-origin" value="ATL" required maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>Destination Airport</label>
+                            <input type="text" id="dossier-dest" value="LGA" required maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>Aircraft Tail No</label>
+                            <input type="text" id="dossier-tail" value="N477AS" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sched Dep (HHMM)</label>
+                            <input type="number" id="dossier-dep-time" value="600" min="0" max="2359" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sched Arr (HHMM)</label>
+                            <input type="number" id="dossier-arr-time" value="639" min="0" max="2359" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Flight Distance (mi)</label>
+                            <input type="number" id="dossier-distance" value="762" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Turnaround Buffer (min)</label>
+                            <input type="number" id="dossier-buffer" value="30" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Operating Day</label>
+                            <input type="number" id="dossier-day" value="27" min="1" max="31" required>
+                        </div>
+                        <div class="form-group" style="justify-content: flex-end;">
+                            <button type="submit" class="btn-ops" style="height: 38px;">Run Delay Forecast</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Predictive Result Readout -->
+                <div id="dossier-predict-result" style="display: none; padding: 1.25rem; background-color: var(--bg-subtle); border-top: 1px solid var(--border-main);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Probability of Delay ≥15m</span>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--navy-primary);" id="dossier-out-prob">--</div>
+                        </div>
+                        <div id="dossier-out-badge"></div>
+                        <div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Predicted Delay</span>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--red-delay);" id="dossier-out-delay">--</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Estimated Arrival</span>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;" id="dossier-out-arr">--</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <h4 style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px;">Predictive Factors (Explainability)</h4>
+                        <div id="dossier-reasons-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Flight Dossier & Turnaround Info -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">📋 Flight Intelligence Dossier</div>
+                    <span class="panel-subtitle" id="dossier-header-id">AS_LIH_HNL_27_600</span>
+                </div>
+                <div class="dossier-grid">
+                    <div>
+                        <div class="dossier-row"><span class="dossier-label">Operating Carrier:</span><span class="dossier-val" id="dos-val-carrier">Alaska Airlines (AS)</span></div>
+                        <div class="dossier-row"><span class="dossier-label">Assigned Aircraft:</span><span class="dossier-val" id="dos-val-tail">N477AS</span></div>
+                        <div class="dossier-row"><span class="dossier-label">Routing:</span><span class="dossier-val" id="dos-val-route">LIH → HNL</span></div>
+                        <div class="dossier-row"><span class="dossier-label">Flight Distance:</span><span class="dossier-val" id="dos-val-dist">102 miles</span></div>
+                    </div>
+                    <div>
+                        <div class="dossier-row"><span class="dossier-label">Scheduled STD:</span><span class="dossier-val" id="dos-val-dep">06:00</span></div>
+                        <div class="dossier-row"><span class="dossier-label">Scheduled STA:</span><span class="dossier-val" id="dos-val-arr">06:39</span></div>
+                        <div class="dossier-row"><span class="dossier-label">Standard Turn Required:</span><span class="dossier-val">45 minutes</span></div>
+                        <div class="dossier-row"><span class="dossier-label">Cascade Vulnerability:</span><span class="dossier-val" style="color: var(--red-delay);">ELEVATED ROTATION RISK</span></div>
+                    </div>
+                </div>
+
+                <div style="padding: 1.25rem; border-top: 1px solid var(--border-main);">
+                    <button class="btn-ops" onclick="openFlightInPropagation()">Open Full Propagation Tree →</button>
+                </div>
             </div>
         </div>
 
+        <!-- Aircraft Daily Rotation Sequence (ORD ── DEN ── SFO) -->
         <div class="panel">
-            <div class="table-container">
-                <table>
+            <div class="panel-header">
+                <div class="panel-title">🔄 Aircraft Daily Rotation Timeline</div>
+                <span class="panel-subtitle">Sequential Aircraft Leg Utilization & Ground Turnaround Slack</span>
+            </div>
+            <div class="rotation-timeline" id="aircraft-rotation-timeline-container">
+                <!-- Timeline Nodes Populated via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 4: PROPAGATION TREE -->
+    <section id="tab-propagation" class="view-section">
+        <div class="propagation-layout">
+            <!-- Sidebar with Root Flight Info & Edge Details -->
+            <div class="prop-sidebar">
+                <div style="border-bottom: 1px solid var(--border-main); padding-bottom: 8px;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Target Root Flight</span>
+                    <div style="font-size: 1.05rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--navy-primary);" id="prop-root-id">AS_LIH_HNL_27_600</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);" id="prop-root-route">LIH → HNL</div>
+                </div>
+
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="prop-input-flight" placeholder="Enter Flight ID..." style="flex:1; padding: 6px; border: 1px solid var(--border-main); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">
+                    <button class="btn-ops" style="padding: 6px 10px;" onclick="loadCustomPropagationTree()">Trace</button>
+                </div>
+
+                <div id="prop-edge-inspector" style="background-color: var(--bg-subtle); padding: 10px; border-radius: 4px; border: 1px solid var(--border-main); font-size: 0.78rem;">
+                    <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">EDGE INSPECTOR</span>
+                    <div style="margin-top: 4px; color: var(--text-secondary);" id="prop-edge-text">Click any connecting edge in the graph to inspect absorbable slack and residual delay mechanics.</div>
+                </div>
+
+                <div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">OPERATIONAL DISPATCH ACTIONS</span>
+                    <div id="prop-actions-list" style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;"></div>
+                </div>
+            </div>
+
+            <!-- Canvas View for Vis.js Tree -->
+            <div class="panel" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                <div class="panel-header">
+                    <div class="panel-title">🌳 Multi-Leg Cascade Dependency Tree (BFS Traversal)</div>
+                    <div style="font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; color: var(--text-secondary);">
+                        🟢 Green: Absorbed by Buffer | 🔴 Red: Residual Delay Passed Downstream
+                    </div>
+                </div>
+                <div id="propagation-graph-canvas"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 5: NETWORK VIEW -->
+    <section id="tab-network" class="view-section">
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">🌐 Airport & Route Network Vulnerability</div>
+                <span class="panel-subtitle">Commercial Route Delay Transmission Rates</span>
+            </div>
+            <div class="table-responsive">
+                <table class="ops-table">
                     <thead>
                         <tr>
-                            <th>Flight ID</th>
-                            <th>Carrier</th>
-                            <th>Aircraft</th>
-                            <th>Origin -> Dest</th>
-                            <th>Scheduled Time</th>
-                            <th>Distance</th>
-                            <th>Risk Score</th>
-                            <th>Expected Delay</th>
-                            <th>Actual Outcome</th>
-                            <th>Analyze</th>
+                            <th>Route Corridor</th>
+                            <th>Origin Hub</th>
+                            <th>Destination Hub</th>
+                            <th>Flight Volume</th>
+                            <th>High-Risk Flights</th>
+                            <th>Route Delay Risk Rate</th>
+                            <th>Average Delay (min)</th>
+                            <th>Network Action</th>
                         </tr>
                     </thead>
-                    <tbody id="flights-table-body"></tbody>
+                    <tbody id="network-routes-tbody"></tbody>
                 </table>
             </div>
         </div>
     </section>
 
-    <!-- VIEW 3: MULTI-LEG CASCADE TREE -->
-    <section id="view-propagation" class="view-section">
-        <div class="propagation-view">
-            <div class="flight-sidebar">
-                <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Root Flight Profile</h3>
-                <div id="prop-flight-details">
-                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Select any flight or enter Flight ID below:</div>
-                </div>
-
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                    <input type="text" id="prop-search-id" placeholder="Flight ID (e.g. AS_LIH_HNL_27_600)" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); padding: 6px 10px; color: white; border-radius: 4px; font-size: 0.8rem;">
-                    <button class="btn-action" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadCustomPropagation()">Trace</button>
-                </div>
-
-                <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
-                    <h4 style="font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">OPERATIONAL RECOMMENDATIONS</h4>
-                    <div id="prop-recommendations-list">
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Traversing aircraft rotations via BFS...</div>
-                    </div>
-                </div>
+    <!-- TAB 6: ANALYTICS WORKSPACE -->
+    <section id="tab-analytics" class="view-section">
+        <div class="grid-2col">
+            <div class="diagnostic-card">
+                <div class="panel-title" style="margin-bottom: 8px;">Top 15 Most Important Predictive Features</div>
+                <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">Feature importance split count from LightGBM: Turnaround buffer slack and airport schedule density dominate predictive power.</p>
+                <img src="/static/plots/feature_importance.png" alt="Feature Importance">
             </div>
 
-            <div class="panel" style="display: flex; flex-direction: column;">
-                <div class="panel-header" style="background-color: var(--bg-surface);">
-                    <div class="panel-title">Interactive Aircraft Rotation & Delay Cascade Tree (BFS Graph Traversal)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Green: Absorbed by Buffer | Yellow/Red: Residual Delay Transmitted</div>
-                </div>
-                <div id="network-graph"></div>
+            <div class="diagnostic-card">
+                <div class="panel-title" style="margin-bottom: 8px;">Precision vs Recall Threshold Trade-Off</div>
+                <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">Calibrated operating points: Competition Mode (τ=0.48, Acc=77.44%) vs Operations Mode (τ=0.18, Recall=65.47%).</p>
+                <img src="/static/plots/threshold_tradeoff.png" alt="Threshold Tradeoff">
             </div>
         </div>
     </section>
 
-    <!-- VIEW 4: MODEL INSIGHTS -->
-    <section id="view-insights" class="view-section">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <!-- TAB 7: MODEL INSIGHTS -->
+    <section id="tab-models" class="view-section">
+        <div class="grid-2col">
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title">Top 15 Most Important Predictive Features</div>
+                    <div class="panel-title">🏆 Primary Classification Engine (DEP_DEL15)</div>
+                    <span class="badge badge-normal">VERIFIED TEST SET</span>
                 </div>
                 <div style="padding: 1.25rem;">
-                    <div style="width: 100%; background: #000; border-radius: 6px; overflow: hidden; display: flex; justify-content: center;">
-                        <img src="/static/plots/feature_importance.png" alt="Feature Importance" style="max-width: 100%; height: auto;">
-                    </div>
+                    <div class="dossier-row"><span class="dossier-label">Model Architecture:</span><span class="dossier-val">Ensemble (LightGBM + XGBoost + CatBoost)</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Final Locked Test Accuracy:</span><span class="dossier-val" style="color: var(--green-normal);">77.44% (+1.54% over baseline)</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Precision (Competition Mode):</span><span class="dossier-val">68.60%</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Recall (Operations Mode):</span><span class="dossier-val">65.47%</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Precision@1% Review Queue:</span><span class="dossier-val" style="color: var(--navy-primary);">96.34% (3.93x random lift)</span></div>
+                    <div class="dossier-row"><span class="dossier-label">ROC-AUC:</span><span class="dossier-val">0.6794</span></div>
+                    <div class="dossier-row"><span class="dossier-label">PR-AUC:</span><span class="dossier-val">0.4576</span></div>
                 </div>
             </div>
 
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title">Precision vs Recall Threshold Trade-off</div>
+                    <div class="panel-title">⏱️ Delay Magnitude Regressor (Minutes)</div>
+                    <span class="badge badge-normal">VERIFIED TEST SET</span>
                 </div>
                 <div style="padding: 1.25rem;">
-                    <div style="width: 100%; background: #000; border-radius: 6px; overflow: hidden; display: flex; justify-content: center;">
-                        <img src="/static/plots/threshold_tradeoff.png" alt="Threshold Tradeoff" style="max-width: 100%; height: auto;">
-                    </div>
+                    <div class="dossier-row"><span class="dossier-label">Model Architecture:</span><span class="dossier-val">LightGBM Huber-Loss Regressor</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Locked Test Set MAE:</span><span class="dossier-val" style="color: var(--blue-accent);">20.07 minutes</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Mean Baseline MAE:</span><span class="dossier-val">28.63 minutes</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Locked Test Median AE:</span><span class="dossier-val">0.95 minutes</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Target Transformation:</span><span class="dossier-val">log1p(DEP_DELAY) with Huber Loss</span></div>
+                    <div class="dossier-row"><span class="dossier-label">Outlier Resilience:</span><span class="dossier-val">Protected against extreme 500m+ delays</span></div>
                 </div>
             </div>
         </div>
     </section>
-</main>
+
+</div>
 
 <script>
-    let network = null;
+    // State management
+    let networkInstance = null;
+    let currentFlightPage = 0;
+    const FLIGHTS_PER_PAGE = 30;
+    let cachedOverviewData = null;
 
-    function switchView(viewName) {
+    // UTC Operational Clock
+    function updateClock() {
+        const now = new Date();
+        const h = String(now.getUTCHours()).padStart(2, '0');
+        const m = String(now.getUTCMinutes()).padStart(2, '0');
+        const s = String(now.getUTCSeconds()).padStart(2, '0');
+        document.getElementById('live-utc-clock').innerText = `${h}:${m}:${s} UTC`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Tab Navigation
+    function switchTab(tabId) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
-        
-        document.getElementById(`view-${viewName}`).classList.add('active');
-        if (event && event.target && event.target.classList) {
-            event.target.classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+        const target = document.getElementById(`tab-${tabId}`);
+        if (target) target.classList.add('active');
+
+        const navBtns = document.querySelectorAll('.header-nav .nav-btn');
+        const tabMap = ['overview', 'flights', 'dossier', 'propagation', 'network', 'analytics', 'models'];
+        const idx = tabMap.indexOf(tabId);
+        if (idx >= 0 && navBtns[idx]) {
+            navBtns[idx].classList.add('active');
         }
 
-        if (viewName === 'propagation' && network) {
-            setTimeout(() => network.fit(), 200);
-        }
-    }
-
-    async function submitFlightPrediction() {
-        const payload = {
-            carrier: document.getElementById('in-carrier').value.trim(),
-            origin: document.getElementById('in-origin').value.trim(),
-            dest: document.getElementById('in-dest').value.trim(),
-            tail_num: document.getElementById('in-tail').value.trim(),
-            crs_dep_time: parseInt(document.getElementById('in-dep-time').value),
-            crs_arr_time: parseInt(document.getElementById('in-arr-time').value),
-            distance: parseFloat(document.getElementById('in-distance').value),
-            turnaround_buffer_min: parseFloat(document.getElementById('in-buffer').value),
-            day_of_month: parseInt(document.getElementById('in-day').value),
-            day_of_week: 4
-        };
-
-        try {
-            const res = await fetch('/api/predict-flight', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-
-            // Display Prediction Results
-            document.getElementById('prediction-results-panel').style.display = 'block';
-            document.getElementById('res-prob').innerText = data.delay_probability_pct;
-            
-            const badgeClass = data.risk_category === 'HIGH' ? 'badge-high' : (data.risk_category === 'ELEVATED' ? 'badge-elevated' : 'badge-normal');
-            document.getElementById('res-risk-badge').innerHTML = `<span class="badge ${badgeClass}">${data.risk_category} DELAY RISK</span>`;
-            
-            document.getElementById('res-delay-mins').innerText = `+${data.predicted_delay_minutes.toFixed(0)} minutes`;
-            document.getElementById('res-est-arr').innerText = data.est_arr_time;
-            document.getElementById('res-sched-arr').innerText = `Scheduled Arr: ${data.sched_arr_time}`;
-
-            // Reasons
-            const reasonsBox = document.getElementById('res-reasons-container');
-            reasonsBox.innerHTML = data.decision_reasons.map(r => `
-                <div class="reason-card">
-                    <div style="font-weight:600; color:var(--accent-cyan);">${r.factor} (${r.impact})</div>
-                    <div style="color:var(--text-secondary); margin-top:3px;">${r.detail}</div>
-                </div>
-            `).join('');
-
-            // Downstream Rotation Cascade Table
-            const rotBody = document.getElementById('rotation-cascade-tbody');
-            if (data.rotation_cascade && data.rotation_cascade.length > 0) {
-                rotBody.innerHTML = data.rotation_cascade.map(leg => {
-                    const statusColor = leg.status === 'DELAY_ABSORBED' ? 'var(--success-green)' : 'var(--danger-red)';
-                    return `
-                        <tr>
-                            <td style="color:var(--accent-blue);">${leg.flight_id}</td>
-                            <td style="font-weight:600;">${leg.route}</td>
-                            <td>${leg.sched_dep}</td>
-                            <td>${leg.sched_arr}</td>
-                            <td style="color:var(--warning-amber); font-weight:600;">${leg.est_arr_time}</td>
-                            <td>${leg.ground_gap_min}m</td>
-                            <td style="color:var(--success-green);">${leg.absorbable_slack_min}m</td>
-                            <td>+${leg.incoming_delay_min}m</td>
-                            <td style="color:${statusColor}; font-weight:700;">+${leg.residual_delay_min}m</td>
-                            <td><span class="badge ${leg.status === 'DELAY_ABSORBED' ? 'badge-normal' : 'badge-high'}">${leg.status}</span></td>
-                        </tr>
-                    `;
-                }).join('');
-            } else {
-                rotBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-secondary);">No further scheduled flight legs found for tail ${payload.tail_num} on Day ${payload.day_of_month}.</td></tr>`;
-            }
-
-        } catch (e) {
-            console.error("Prediction error:", e);
-            alert("Error running flight prediction.");
+        if (tabId === 'propagation' && networkInstance) {
+            setTimeout(() => networkInstance.fit(), 200);
         }
     }
 
+    // Load Overview Data from API
     async function loadOverview() {
         try {
             const res = await fetch('/api/overview');
             const data = await res.json();
-            
+            cachedOverviewData = data;
+
             document.getElementById('kpi-total').innerText = data.summary.total_flights.toLocaleString();
-            document.getElementById('kpi-high').innerText = data.summary.high_risk_count.toLocaleString();
-            document.getElementById('kpi-elevated').innerText = data.summary.elevated_risk_count.toLocaleString();
-            document.getElementById('kpi-normal').innerText = data.summary.normal_count.toLocaleString();
+            document.getElementById('kpi-at-risk').innerText = data.summary.high_risk_count.toLocaleString();
 
-            const hubBody = document.getElementById('hubs-table-body');
+            // Populate Priority Departure Table
+            const tbody = document.getElementById('overview-priority-tbody');
+            tbody.innerHTML = data.high_priority_flights.map((f, i) => {
+                const badge = f.risk_category === 'HIGH' ? 'badge-high' : (f.risk_category === 'ELEVATED' ? 'badge-watch' : 'badge-normal');
+                const depH = String(Math.floor(f.crs_dep_time / 100)).padStart(2, '0');
+                const depM = String(f.crs_dep_time % 100).padStart(2, '0');
+                const arrH = String(Math.floor(f.crs_arr_time / 100)).padStart(2, '0');
+                const arrM = String(f.crs_arr_time % 100).padStart(2, '0');
+                return `
+                    <tr onclick="inspectFlightDossier('${f.flight_id}')">
+                        <td style="color:var(--text-muted);">${i + 1}</td>
+                        <td style="color:var(--navy-primary); font-weight:700;">${f.flight_id}</td>
+                        <td><span class="badge badge-code">${f.carrier}</span></td>
+                        <td style="font-weight:600;">${f.origin} → ${f.dest}</td>
+                        <td>${depH}:${depM}</td>
+                        <td>${arrH}:${arrM}</td>
+                        <td>${f.tail_num}</td>
+                        <td style="font-weight:700; color:var(--red-delay);">${(f.delay_prob * 100).toFixed(1)}%</td>
+                        <td style="color:var(--amber-watch); font-weight:600;">+${f.predicted_delay.toFixed(0)}m</td>
+                        <td><span class="badge ${badge}">${f.risk_category}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render Network Map Hubs
+            renderNetworkMap(data.critical_hubs);
+
+            // Populate Histogram
+            renderHistogram(data.risk_distribution);
+
+            // Populate Hubs Table
+            const hubBody = document.getElementById('overview-hubs-tbody');
             hubBody.innerHTML = data.critical_hubs.map(h => `
-                <tr>
-                    <td style="font-weight:700; color:var(--accent-cyan);">${h.origin}</td>
+                <tr onclick="filterByAirport('${h.code}')">
+                    <td style="font-weight:700; color:var(--navy-primary);">${h.code}</td>
+                    <td style="font-family:'Inter', sans-serif;">${h.name}</td>
                     <td>${h.total_flights}</td>
-                    <td style="color:var(--danger-red); font-weight:700;">${h.high_risk_count}</td>
-                    <td>${(h.avg_risk_score * 100).toFixed(1)}%</td>
+                    <td style="color:var(--red-delay); font-weight:700;">${h.high_risk_count}</td>
+                    <td>${h.avg_risk_pct}%</td>
                 </tr>
             `).join('');
 
-            const flightsRes = await fetch('/api/flights?risk_category=HIGH&limit=25');
-            const highFlights = await flightsRes.json();
-            
-            const tbody = document.getElementById('overview-table-body');
-            tbody.innerHTML = highFlights.map(f => `
-                <tr onclick="inspectFlight('${f.flight_id}')">
-                    <td style="color:var(--accent-blue);">${f.flight_id}</td>
-                    <td>${f.carrier}</td>
-                    <td>${f.origin} -> ${f.dest}</td>
-                    <td>${f.tail_num}</td>
-                    <td>${String(f.crs_dep_time).padStart(4, '0')}</td>
-                    <td><span class="badge badge-high">${(f.delay_prob * 100).toFixed(1)}%</span></td>
-                    <td style="color:var(--warning-amber); font-weight:600;">+${f.predicted_delay.toFixed(0)}m</td>
-                    <td><button class="btn-action" style="padding:4px 8px; font-size:0.75rem;" onclick="event.stopPropagation(); inspectFlight('${f.flight_id}')">Trace</button></td>
-                </tr>
-            `).join('');
+            // Populate Alerts Feed
+            const alertsFeed = document.getElementById('overview-alerts-feed');
+            alertsFeed.innerHTML = data.recent_alerts.map(a => {
+                const dotClass = a.severity === 'HIGH' ? 'high' : (a.severity === 'WATCH' ? 'watch' : 'normal');
+                return `
+                    <div class="alert-item">
+                        <span class="alert-dot ${dotClass}"></span>
+                        <div style="flex:1;">
+                            <div style="color:var(--text-main);">${a.text}</div>
+                            <span class="alert-time">${a.time}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
         } catch (e) {
-            console.error("Overview error:", e);
+            console.error("Overview fetch error:", e);
         }
     }
 
-    async function fetchFlights() {
-        const carrier = document.getElementById('filter-carrier').value;
-        const origin = document.getElementById('filter-origin').value;
-        const dest = document.getElementById('filter-dest').value;
-        const tail = document.getElementById('filter-tail').value;
+    // Render US Hub Map SVG
+    function renderNetworkMap(hubs) {
+        const svg = document.getElementById('us-network-svg');
+        const arcsGroup = document.getElementById('map-route-arcs');
+        const nodesGroup = document.getElementById('map-hub-nodes');
+
+        arcsGroup.innerHTML = '';
+        nodesGroup.innerHTML = '';
+
+        // Draw connecting route arcs between major hubs (ORD, ATL, DEN, DFW, LAX, JFK, SFO)
+        const top5 = hubs.slice(0, 6);
+        for (let i = 0; i < top5.length; i++) {
+            for (let j = i + 1; j < top5.length; j++) {
+                const h1 = top5[i];
+                const h2 = top5[j];
+                const midX = (h1.x + h2.x) / 2;
+                const midY = (h1.y + h2.y) / 2 - 5; // Curve arc upwards
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${h1.x} ${h1.y} Q ${midX} ${midY} ${h2.x} ${h2.y}`);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', '#cbd5e1');
+                path.setAttribute('stroke-width', '0.6');
+                path.setAttribute('stroke-dasharray', '1.5, 1.5');
+                arcsGroup.appendChild(path);
+            }
+        }
+
+        // Draw Airport Nodes
+        hubs.forEach(h => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'airport-node');
+            g.setAttribute('onclick', `filterByAirport('${h.code}')`);
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', h.x);
+            circle.setAttribute('cy', h.y);
+            circle.setAttribute('r', h.high_risk_count > 500 ? '2.8' : '2.2');
+            circle.setAttribute('fill', h.avg_risk_pct >= 25 ? 'var(--red-delay)' : (h.avg_risk_pct >= 20 ? 'var(--amber-watch)' : 'var(--green-normal)'));
+            circle.setAttribute('stroke', '#ffffff');
+            circle.setAttribute('stroke-width', '1.2');
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', h.x + 3.2);
+            text.setAttribute('y', h.y + 1.2);
+            text.setAttribute('font-size', '2.8');
+            text.setAttribute('font-family', 'JetBrains Mono');
+            text.setAttribute('font-weight', '700');
+            text.setAttribute('fill', '#0f172a');
+            text.textContent = h.code;
+
+            g.appendChild(circle);
+            g.appendChild(text);
+            nodesGroup.appendChild(g);
+        });
+    }
+
+    // Render Pure CSS Histogram
+    function renderHistogram(distBins) {
+        const container = document.getElementById('overview-histogram');
+        const maxCount = Math.max(...distBins.map(b => b.count), 1);
+
+        container.innerHTML = distBins.map((b, i) => {
+            const pct = Math.max(6, (b.count / maxCount) * 100);
+            const color = i >= 4 ? 'var(--red-delay)' : (i >= 2 ? 'var(--amber-watch)' : 'var(--green-normal)');
+            return `
+                <div class="histo-bar-wrap" title="${b.bin}: ${b.count.toLocaleString()} flights">
+                    <div class="histo-bar" style="height:${pct}%; background-color:${color};"></div>
+                    <span class="histo-label">${b.bin.split('-')[0]}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Flights Table Logic
+    async function fetchFlightsTable() {
+        const search = document.getElementById('filter-flight-id').value.trim();
+        const carrier = document.getElementById('filter-carrier').value.trim();
+        const origin = document.getElementById('filter-origin').value.trim();
+        const dest = document.getElementById('filter-dest').value.trim();
         const risk = document.getElementById('filter-risk').value;
 
-        let url = `/api/flights?limit=50`;
-        if (carrier) url += `&carrier=${carrier}`;
-        if (origin) url += `&origin=${origin}`;
-        if (dest) url += `&dest=${dest}`;
-        if (tail) url += `&tail_num=${tail}`;
-        if (risk) url += `&risk_category=${risk}`;
+        let url = `/api/flights?limit=${FLIGHTS_PER_PAGE}&offset=${currentFlightPage * FLIGHTS_PER_PAGE}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (carrier) url += `&carrier=${encodeURIComponent(carrier)}`;
+        if (origin) url += `&origin=${encodeURIComponent(origin)}`;
+        if (dest) url += `&dest=${encodeURIComponent(dest)}`;
+        if (risk) url += `&risk_category=${encodeURIComponent(risk)}`;
 
         const res = await fetch(url);
         const flights = await res.json();
-        
-        const tbody = document.getElementById('flights-table-body');
+
+        const tbody = document.getElementById('full-flights-tbody');
         tbody.innerHTML = flights.map(f => {
-            const badgeClass = f.risk_category === 'HIGH' ? 'badge-high' : (f.risk_category === 'ELEVATED' ? 'badge-elevated' : 'badge-normal');
-            const actualText = f.is_delayed_actual === 1 ? `<span style="color:var(--danger-red);">Delayed (+${f.dep_delay_actual.toFixed(0)}m)</span>` : `<span style="color:var(--success-green);">On-Time</span>`;
+            const badge = f.risk_category === 'HIGH' ? 'badge-high' : (f.risk_category === 'ELEVATED' ? 'badge-watch' : 'badge-normal');
+            const dep = String(Math.floor(f.crs_dep_time / 100)).padStart(2, '0') + ':' + String(f.crs_dep_time % 100).padStart(2, '0');
+            const arr = String(Math.floor(f.crs_arr_time / 100)).padStart(2, '0') + ':' + String(f.crs_arr_time % 100).padStart(2, '0');
+            const outcome = f.is_delayed_actual === 1 ? `<span style="color:var(--red-delay); font-weight:700;">Delayed (+${f.dep_delay_actual.toFixed(0)}m)</span>` : `<span style="color:var(--green-normal); font-weight:600;">On-Time</span>`;
             return `
-                <tr onclick="inspectFlight('${f.flight_id}')">
-                    <td style="color:var(--accent-blue);">${f.flight_id}</td>
-                    <td>${f.carrier}</td>
+                <tr onclick="inspectFlightDossier('${f.flight_id}')">
+                    <td style="color:var(--navy-primary); font-weight:700;">${f.flight_id}</td>
+                    <td><span class="badge badge-code">${f.carrier}</span></td>
                     <td>${f.tail_num}</td>
-                    <td>${f.origin} -> ${f.dest}</td>
-                    <td>${String(f.crs_dep_time).padStart(4, '0')}</td>
+                    <td style="font-weight:600;">${f.origin}</td>
+                    <td style="font-weight:600;">${f.dest}</td>
+                    <td>${dep}</td>
+                    <td>${arr}</td>
                     <td>${f.distance.toFixed(0)} mi</td>
-                    <td><span class="badge ${badgeClass}">${(f.delay_prob * 100).toFixed(1)}%</span></td>
-                    <td style="font-weight:600;">+${f.predicted_delay.toFixed(0)}m</td>
-                    <td>${actualText}</td>
-                    <td><button class="btn-action" style="padding:4px 8px; font-size:0.75rem;" onclick="event.stopPropagation(); inspectFlight('${f.flight_id}')">Cascade Tree</button></td>
+                    <td style="font-weight:700; color:var(--red-delay);">${(f.delay_prob * 100).toFixed(1)}%</td>
+                    <td style="color:var(--amber-watch); font-weight:600;">+${f.predicted_delay.toFixed(0)}m</td>
+                    <td>${outcome}</td>
+                    <td><button class="btn-outline" onclick="event.stopPropagation(); inspectFlightPropagation('${f.flight_id}')">Trace Tree</button></td>
                 </tr>
             `;
         }).join('');
     }
 
-    async function inspectFlight(flightId) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
-        document.getElementById('view-propagation').classList.add('active');
-        document.querySelectorAll('.nav-tab')[3].classList.add('active');
-
-        document.getElementById('prop-search-id').value = flightId;
-        await loadPropagation(flightId);
+    function changeFlightPage(delta) {
+        currentFlightPage = Math.max(0, currentFlightPage + delta);
+        fetchFlightsTable();
     }
 
-    async function loadCustomPropagation() {
-        const fId = document.getElementById('prop-search-id').value.trim();
-        if (fId) {
-            await loadPropagation(fId);
+    function resetFlightFilters() {
+        document.getElementById('filter-flight-id').value = '';
+        document.getElementById('filter-carrier').value = '';
+        document.getElementById('filter-origin').value = '';
+        document.getElementById('filter-dest').value = '';
+        document.getElementById('filter-risk').value = '';
+        currentFlightPage = 0;
+        fetchFlightsTable();
+    }
+
+    function filterByAirport(code) {
+        switchTab('flights');
+        document.getElementById('filter-origin').value = code;
+        fetchFlightsTable();
+    }
+
+    // Inspect Flight in Intelligence Dossier
+    async function inspectFlightDossier(flightId) {
+        switchTab('dossier');
+        document.getElementById('dossier-header-id').innerText = flightId;
+
+        try {
+            const res = await fetch(`/api/flights/${flightId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const f = data.flight;
+
+            // Fill Dossier
+            document.getElementById('dos-val-carrier').innerText = `${f.carrier}`;
+            document.getElementById('dos-val-tail').innerText = f.tail_num;
+            document.getElementById('dos-val-route').innerText = `${f.origin} → ${f.dest}`;
+            document.getElementById('dos-val-dist').innerText = `${f.distance.toFixed(0)} miles`;
+            document.getElementById('dos-val-dep').innerText = String(Math.floor(f.crs_dep_time / 100)).padStart(2, '0') + ':' + String(f.crs_dep_time % 100).padStart(2, '0');
+            document.getElementById('dos-val-arr').innerText = String(Math.floor(f.crs_arr_time / 100)).padStart(2, '0') + ':' + String(f.crs_arr_time % 100).padStart(2, '0');
+
+            // Prefill Predictor form
+            document.getElementById('dossier-carrier').value = f.carrier;
+            document.getElementById('dossier-origin').value = f.origin;
+            document.getElementById('dossier-dest').value = f.dest;
+            document.getElementById('dossier-tail').value = f.tail_num;
+            document.getElementById('dossier-dep-time').value = f.crs_dep_time;
+            document.getElementById('dossier-arr-time').value = f.crs_arr_time;
+            document.getElementById('dossier-distance').value = f.distance;
+            document.getElementById('dossier-day').value = f.day_of_month;
+
+            // Render Timeline
+            renderRotationTimeline(data.aircraft_rotation, flightId);
+
+            // Trigger prediction
+            submitCustomFlight();
+
+        } catch (e) {
+            console.error("Dossier load error:", e);
         }
     }
 
-    async function loadPropagation(flightId) {
-        try {
-            const res = await fetch(`/api/propagation/${flightId}?depth=6`);
-            if (!res.ok) {
-                alert("Flight not found in schedule.");
-                return;
-            }
-            const tree = await res.json();
+    // Render Sequential Aircraft Rotation Timeline (ORD ── DEN ── SFO)
+    function renderRotationTimeline(legs, selectedId) {
+        const container = document.getElementById('aircraft-rotation-timeline-container');
+        if (!legs || legs.length === 0) {
+            container.innerHTML = `<div style="padding:1rem; color:var(--text-muted);">No sequential rotations found for this aircraft tail on this day.</div>`;
+            return;
+        }
 
-            const detailsBox = document.getElementById('prop-flight-details');
-            detailsBox.innerHTML = `
-                <div class="detail-row"><span class="detail-label">Root Flight:</span><span class="detail-val" style="color:var(--accent-blue);">${tree.root_flight}</span></div>
-                <div class="detail-row"><span class="detail-label">Route:</span><span class="detail-val">${tree.root_route}</span></div>
-                <div class="detail-row"><span class="detail-label">Initial Delay:</span><span class="detail-val" style="color:var(--warning-amber);">+${tree.root_delay.toFixed(0)}m</span></div>
-                <div class="detail-row"><span class="detail-label">Downstream Cascade:</span><span class="detail-val" style="color:var(--danger-red);">${tree.affected_flights_count} flight(s)</span></div>
-                <div class="detail-row"><span class="detail-label">Max Rotation Depth:</span><span class="detail-val">L${tree.max_cascade_depth}</span></div>
+        let html = '';
+        for (let i = 0; i < legs.length; i++) {
+            const leg = legs[i];
+            const isSelected = leg.flight_id === selectedId;
+            const dep = String(Math.floor(leg.crs_dep_time / 100)).padStart(2, '0') + ':' + String(leg.crs_dep_time % 100).padStart(2, '0');
+            const arr = String(Math.floor(leg.crs_arr_time / 100)).padStart(2, '0') + ':' + String(leg.crs_arr_time % 100).padStart(2, '0');
+
+            html += `
+                <div class="leg-node ${isSelected ? 'selected' : ''}" onclick="inspectFlightDossier('${leg.flight_id}')">
+                    <div class="leg-node-header">
+                        <span class="leg-flight-code">${leg.carrier}</span>
+                        <span class="badge ${leg.risk_category === 'HIGH' ? 'badge-high' : 'badge-watch'}">${(leg.delay_prob * 100).toFixed(0)}%</span>
+                    </div>
+                    <div class="leg-route">${leg.origin} → ${leg.dest}</div>
+                    <div class="leg-times">STD ${dep} • STA ${arr}</div>
+                </div>
             `;
 
-            const recBox = document.getElementById('prop-recommendations-list');
+            // Draw turnaround connector if next flight exists
+            if (i < legs.length - 1) {
+                const next = legs[i + 1];
+                const arrMin = Math.floor(leg.crs_arr_time / 100) * 60 + (leg.crs_arr_time % 100);
+                const nextDepMin = Math.floor(next.crs_dep_time / 100) * 60 + (next.crs_dep_time % 100);
+                let turnGap = nextDepMin - arrMin;
+                if (turnGap < -720) turnGap += 1440;
+                const isTight = turnGap < 45;
+
+                html += `
+                    <div class="turn-connector">
+                        <span class="turn-tag ${isTight ? 'tight' : ''}">TURN ${turnGap}m</span>
+                        <div class="turn-line"></div>
+                        <span style="font-size:0.65rem;">${leg.dest}</span>
+                    </div>
+                `;
+            }
+        }
+        container.innerHTML = html;
+    }
+
+    // Submit Custom Flight Delay Forecast
+    async function submitCustomFlight() {
+        const payload = {
+            carrier: document.getElementById('dossier-carrier').value.trim(),
+            origin: document.getElementById('dossier-origin').value.trim(),
+            dest: document.getElementById('dossier-dest').value.trim(),
+            tail_num: document.getElementById('dossier-tail').value.trim(),
+            crs_dep_time: parseInt(document.getElementById('dossier-dep-time').value),
+            crs_arr_time: parseInt(document.getElementById('dossier-arr-time').value),
+            distance: parseFloat(document.getElementById('dossier-distance').value),
+            turnaround_buffer_min: parseFloat(document.getElementById('dossier-buffer').value),
+            day_of_month: parseInt(document.getElementById('dossier-day').value),
+            day_of_week: 4
+        };
+
+        const res = await fetch('/api/predict-flight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        document.getElementById('dossier-predict-result').style.display = 'block';
+        document.getElementById('dossier-out-prob').innerText = data.delay_probability_pct;
+        document.getElementById('dossier-out-delay').innerText = `+${data.predicted_delay_minutes.toFixed(0)} min`;
+        document.getElementById('dossier-out-arr').innerText = data.est_arr_time;
+
+        const badgeClass = data.risk_category === 'HIGH' ? 'badge-high' : (data.risk_category === 'ELEVATED' ? 'badge-watch' : 'badge-normal');
+        document.getElementById('dossier-out-badge').innerHTML = `<span class="badge ${badgeClass}" style="font-size:0.85rem; padding:4px 10px;">${data.risk_category} RISK</span>`;
+
+        // Reasons
+        const reasonsBox = document.getElementById('dossier-reasons-list');
+        reasonsBox.innerHTML = data.decision_reasons.map(r => `
+            <div style="background:#ffffff; border:1px solid var(--border-main); border-left:3px solid var(--blue-accent); padding:8px 10px; border-radius:3px; margin-bottom:6px; font-size:0.78rem;">
+                <div style="font-weight:700; color:var(--navy-primary);">${r.factor} (${r.impact})</div>
+                <div style="color:var(--text-secondary); margin-top:2px;">${r.detail}</div>
+            </div>
+        `).join('');
+    }
+
+    function openFlightInPropagation() {
+        const fId = document.getElementById('dossier-header-id').innerText;
+        inspectFlightPropagation(fId);
+    }
+
+    // Propagation Tree Visualizer
+    async function inspectFlightPropagation(flightId) {
+        switchTab('propagation');
+        document.getElementById('prop-root-id').innerText = flightId;
+        document.getElementById('prop-input-flight').value = flightId;
+
+        try {
+            const res = await fetch(`/api/propagation/${flightId}?depth=6`);
+            if (!res.ok) return;
+            const tree = await res.json();
+
+            document.getElementById('prop-root-route').innerText = tree.root_route;
+
+            // Operational Actions
+            const actionsBox = document.getElementById('prop-actions-list');
             if (tree.recommendations.length > 0) {
-                recBox.innerHTML = tree.recommendations.map(r => `
-                    <div class="rec-box">
-                        <div style="font-weight:600; color:var(--danger-red);">${r.severity}: ${r.rule}</div>
-                        <div>${r.action}</div>
+                actionsBox.innerHTML = tree.recommendations.map(r => `
+                    <div style="background:#fee2e2; border-left:3px solid var(--red-delay); padding:6px 8px; border-radius:3px; font-size:0.75rem;">
+                        <strong style="color:var(--red-delay);">${r.rule}:</strong> ${r.action}
                     </div>
                 `).join('');
             } else {
-                recBox.innerHTML = `<div style="font-size:0.8rem; color:var(--success-green); padding:8px 0;">All downstream rotations have sufficient absorbable slack. Delay fully absorbed.</div>`;
+                actionsBox.innerHTML = `<div style="color:var(--green-normal); font-size:0.75rem;">All aircraft rotations have sufficient absorbable slack. Delay fully absorbed.</div>`;
             }
 
-            renderVisGraph(tree);
+            // Render Vis Network
+            renderVisNetwork(tree);
+
         } catch (e) {
-            console.error("Propagation load error:", e);
+            console.error("Propagation error:", e);
         }
     }
 
-    function renderVisGraph(tree) {
-        const container = document.getElementById('network-graph');
-        
+    function loadCustomPropagationTree() {
+        const id = document.getElementById('prop-input-flight').value.trim();
+        if (id) inspectFlightPropagation(id);
+    }
+
+    function renderVisNetwork(tree) {
+        const container = document.getElementById('propagation-graph-canvas');
+
         const nodes = tree.nodes.map(n => {
-            let color = '#10b981';
-            if (n.status === 'ROOT_ORIGIN') color = '#3b82f6';
-            else if (n.status === 'HIGH_CASCADE_RISK') color = '#ef4444';
-            else if (n.status === 'MODERATE_CASCADE_RISK') color = '#f59e0b';
+            let bg = '#dcfce7'; // green
+            let border = '#16a34a';
+            let fontColor = '#14532d';
+            if (n.status === 'ROOT_ORIGIN') {
+                bg = '#dbeafe'; border = '#1d4ed8'; fontColor = '#1e3a8a';
+            } else if (n.status === 'HIGH_CASCADE_RISK') {
+                bg = '#fee2e2'; border = '#dc2626'; fontColor = '#7f1d1d';
+            } else if (n.status === 'MODERATE_CASCADE_RISK') {
+                bg = '#fef3c7'; border = '#d97706'; fontColor = '#78350f';
+            }
 
             return {
                 id: n.id,
                 label: `${n.label}\nTail: ${n.tail_num}\nResidual: +${n.residual_delay}m`,
-                color: {
-                    background: color,
-                    border: '#ffffff',
-                    highlight: { background: color, border: '#ffffff' }
-                },
-                font: { color: '#ffffff', face: 'Inter', size: 12, strokeWidth: 2, strokeColor: '#000000' },
+                color: { background: bg, border: border, highlight: { background: bg, border: border } },
+                font: { color: fontColor, face: 'JetBrains Mono', size: 11, bold: true },
                 shape: 'box',
-                margin: 10
+                margin: 10,
+                borderWidth: 1.5
             };
         });
 
         const edges = tree.edges.map(e => ({
             from: e.source,
             to: e.target,
-            label: `Slack: ${e.slack_minutes}m\nResidual: +${e.residual_delay}m`,
+            label: `Slack ${e.slack_minutes}m\n+${e.residual_delay}m`,
             arrows: 'to',
-            color: { color: e.is_absorbed ? '#10b981' : '#ef4444' },
-            font: { color: '#94a3b8', size: 10, align: 'top' },
-            dashes: e.is_absorbed
+            color: { color: e.is_absorbed ? '#16a34a' : '#dc2626' },
+            font: { color: '#475569', size: 9, align: 'top', background: '#ffffff' },
+            dashes: e.is_absorbed,
+            width: e.is_absorbed ? 1.5 : 2.5,
+            edgeData: e
         }));
 
         const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
@@ -924,21 +1676,81 @@
                 hierarchical: {
                     direction: 'LR',
                     sortMethod: 'directed',
-                    levelSeparation: 220,
-                    nodeSpacing: 120
+                    levelSeparation: 240,
+                    nodeSpacing: 130
                 }
             },
-            physics: false
+            physics: false,
+            interaction: { hover: true }
         };
 
-        network = new vis.Network(container, data, options);
+        networkInstance = new vis.Network(container, data, options);
+
+        // Edge Inspection Click Event
+        networkInstance.on('selectEdge', function(params) {
+            if (params.edges.length > 0) {
+                const edgeId = params.edges[0];
+                const clickedEdge = edges.find(e => e.id === edgeId || (e.from === params.items[0]?.from && e.to === params.items[0]?.to)) || edges[0];
+                if (clickedEdge && clickedEdge.edgeData) {
+                    const d = clickedEdge.edgeData;
+                    document.getElementById('prop-edge-text').innerHTML = `
+                        <strong>AIRCRAFT CONTINUITY ROTATION</strong><br>
+                        • Inbound Arrival to Turnaround: +${d.transmitted_delay}m delay<br>
+                        • Scheduled Ground Gap: ${d.ground_gap}m<br>
+                        • Absorbable Buffer Slack: <strong>${d.slack_minutes}m</strong><br>
+                        • Residual Transmitted to Outbound: <span style="color:${d.residual_delay > 0 ? 'var(--red-delay)' : 'var(--green-normal)'}; font-weight:700;">+${d.residual_delay}m</span><br>
+                        • Cascade Status: <strong>${d.is_absorbed ? 'DELAY ABSORBED' : 'CASCADE PROPAGATING'}</strong>
+                    `;
+                }
+            }
+        });
     }
 
+    // Load Network Routes
+    async function loadNetworkView() {
+        try {
+            const res = await fetch('/api/network-routes');
+            const routes = await res.json();
+            const tbody = document.getElementById('network-routes-tbody');
+            tbody.innerHTML = routes.map(r => `
+                <tr onclick="inspectRoute('${r.origin}', '${r.dest}')">
+                    <td style="color:var(--navy-primary); font-weight:700;">${r.origin} ✈️ ${r.dest}</td>
+                    <td>${r.origin_name} (${r.origin})</td>
+                    <td>${r.dest_name} (${r.dest})</td>
+                    <td>${r.volume} flights</td>
+                    <td style="color:var(--red-delay); font-weight:700;">${r.high_risk_count}</td>
+                    <td><span class="badge ${r.risk_pct >= 25 ? 'badge-high' : 'badge-watch'}">${r.risk_pct}%</span></td>
+                    <td>+${r.avg_delay_min} min</td>
+                    <td><button class="btn-outline" onclick="event.stopPropagation(); filterByAirport('${r.origin}')">View Departures</button></td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error("Network routes error:", e);
+        }
+    }
+
+    function inspectRoute(orig, dest) {
+        switchTab('flights');
+        document.getElementById('filter-origin').value = orig;
+        document.getElementById('filter-dest').value = dest;
+        fetchFlightsTable();
+    }
+
+    function globalSearchFlight() {
+        const query = document.getElementById('global-flight-search').value.trim();
+        if (!query) return;
+        switchTab('flights');
+        document.getElementById('filter-flight-id').value = query;
+        fetchFlightsTable();
+    }
+
+    // Initialize application on DOM ready
     window.addEventListener('DOMContentLoaded', () => {
         loadOverview();
-        fetchFlights();
-        // Load default multi-leg rotation in propagation view
-        loadPropagation('AS_LIH_HNL_27_600');
+        fetchFlightsTable();
+        loadNetworkView();
+        // Load default multi-leg flight
+        inspectFlightPropagation('AS_LIH_HNL_27_600');
     });
 </script>
 
