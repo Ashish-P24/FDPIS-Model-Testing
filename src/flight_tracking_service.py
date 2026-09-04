@@ -3,6 +3,7 @@ import time
 import math
 import logging
 import urllib.request
+import urllib.parse
 import json
 from typing import List, Dict, Any, Optional
 
@@ -94,41 +95,77 @@ class FlightTrackingService:
             logger.warning(f"FR24 API fetch failed: {e}")
         return None
 
+    def _get_opensky_token(self) -> Optional[str]:
+        """Obtain OAuth2 bearer token using client credentials."""
+        client_id = os.environ.get("OPENSKY_CLIENT_ID", "ashish-api-client")
+        client_secret = os.environ.get("OPENSKY_CLIENT_SECRET", "443xyooRL8nGXKPMMdy0FjueFC5vinKd")
+        try:
+            token_url = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+            payload = urllib.parse.urlencode({
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret
+            }).encode("utf-8")
+            req = urllib.request.Request(token_url, data=payload, headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "FDPIS/2.0"
+            })
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                token_data = json.loads(resp.read().decode("utf-8"))
+                return token_data.get("access_token")
+        except Exception as e:
+            logger.warning(f"OpenSky OAuth token fetch failed: {e}")
+        return None
+
     def _fetch_from_opensky(self) -> Optional[List[Dict[str, Any]]]:
         try:
-            # US Continental bounds: lamin=24.5, lomin=-125.0, lamax=49.0, lomax=-66.9
+            token = self._get_opensky_token()
+            if not token:
+                return None
+
+            # US Continental bounds
             url = "https://opensky-network.org/api/states/all?lamin=24.5&lomin=-125.0&lamax=49.0&lomax=-66.9"
-            req = urllib.request.Request(url, headers={"User-Agent": "FDPIS/2.0"})
-            with urllib.request.urlopen(req, timeout=6) as response:
+            req = urllib.request.Request(url, headers={
+                "Authorization": f"Bearer {token}",
+                "User-Agent": "FDPIS/2.0"
+            })
+            with urllib.request.urlopen(req, timeout=10) as response:
                 if response.status == 200:
                     data = json.loads(response.read().decode('utf-8'))
-                    states = data.get("states", [])
+                    states = data.get("states", []) or []
                     flights = []
-                    for s in states[:80]: # sample active vectors
+                    for s in states[:120]:  # broader sample with auth
                         callsign = (s[1] or "").strip()
-                        if not callsign:
+                        lat = s[6]
+                        lon = s[5]
+                        if not callsign or lat is None or lon is None:
                             continue
+                        on_ground = bool(s[8])
+                        baro_alt_m = s[7] or 0
+                        velocity_ms = s[9] or 0
+                        heading_deg = s[10] or 0
+                        vert_rate_ms = s[11] or 0
                         flights.append({
                             "flight_id": callsign,
                             "callsign": callsign,
-                            "registration": callsign,
-                            "tail_num": callsign,
+                            "registration": s[0] or callsign,  # ICAO24
+                            "tail_num": s[0] or callsign,
                             "aircraft_type": "Commercial Jet",
                             "carrier": callsign[:2] if len(callsign) >= 2 else "US",
-                            "origin": "US Hub",
+                            "origin": "Live ADS-B",
                             "dest": "En Route",
-                            "latitude": float(s[6]),
-                            "longitude": float(s[5]),
-                            "altitude": int((s[7] or 0) * 3.28084), # meters to feet
-                            "ground_speed": int((s[9] or 0) * 1.94384), # m/s to knots
-                            "heading": int(s[10] or 0),
-                            "vertical_speed": int((s[11] or 0) * 196.85), # m/s to ft/min
-                            "status": "ON GROUND" if s[8] else "IN FLIGHT",
+                            "latitude": float(lat),
+                            "longitude": float(lon),
+                            "altitude": int(baro_alt_m * 3.28084),        # m → ft
+                            "ground_speed": int(velocity_ms * 1.94384),   # m/s → kts
+                            "heading": int(heading_deg),
+                            "vertical_speed": int(vert_rate_ms * 196.85), # m/s → ft/min
+                            "status": "ON GROUND" if on_ground else "IN FLIGHT",
                             "progress_pct": 50,
                             "provider": "OpenSky Network ADS-B",
                             "last_updated_epoch": time.time()
                         })
-                    return flights
+                    return flights if flights else None
         except Exception as e:
             logger.warning(f"OpenSky API fetch failed: {e}")
         return None
@@ -257,21 +294,24 @@ class FlightTrackingService:
 
         # 1. Try Official FR24 API if key provided
         flights = self._fetch_from_fr24()
-        
-        # 2. Try OpenSky Network if FR24 not configured
-        if not flights and (self.opensky_user or os.getenv("USE_OPENSKY")):
-            flights = self._fetch_from_opensky()
+        mode = "Flightradar24 Live API" if flights else None
 
-        # 3. Use deterministic continuous fleet surveillance engine
+        # 2. Always try OpenSky Network (OAuth2 credentials configured)
+        if not flights:
+            flights = self._fetch_from_opensky()
+            if flights:
+                mode = "OpenSky Network ADS-B"
+
+        # 3. Fallback: deterministic continuous fleet surveillance engine
         if not flights:
             flights = self._generate_realistic_live_fleet()
+            mode = "FDPIS Live Fleet Surveillance"
 
         self.cached_flights = flights
         self.last_fetch_time = now
-        provider_mode = "Flightradar24 Live API" if self.fr24_key else ("OpenSky Network ADS-B" if (self.opensky_user or os.getenv("USE_OPENSKY")) else "FDPIS Live Fleet Surveillance")
         return {
             "status": "LIVE",
-            "mode": provider_mode,
+            "mode": mode,
             "age_seconds": 0,
             "timestamp_utc": time.strftime("%H:%M:%S UTC", time.gmtime(now)),
             "count": len(flights),
