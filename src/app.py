@@ -18,6 +18,7 @@ MODELS_DIR = os.path.join(BASE_DIR, "models")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 from src.propagation_engine import FDPISPropagationEngine
+from src.predict import FDPISPredictor
 
 app = FastAPI(
     title="FDPIS Operations Intelligence API",
@@ -34,28 +35,25 @@ app.add_middleware(
 )
 
 # Global models and cache
-MODELS = {}
-FEATURES = []
-PROPAGATION_ENGINE = FDPISPropagationEngine()
+PREDICTOR: Optional[FDPISPredictor] = None
 
-def load_system_artifacts():
-    global MODELS, FEATURES
-    if not FEATURES and os.path.exists(os.path.join(MODELS_DIR, "features.json")):
-        with open(os.path.join(MODELS_DIR, "features.json"), "r") as f:
-            FEATURES = json.load(f)
-            
-    if "lgb" not in MODELS and os.path.exists(os.path.join(MODELS_DIR, "lightgbm.pkl")):
-        MODELS["lgb"] = joblib.load(os.path.join(MODELS_DIR, "lightgbm.pkl"))
-    if "xgb" not in MODELS and os.path.exists(os.path.join(MODELS_DIR, "xgboost.pkl")):
-        MODELS["xgb"] = joblib.load(os.path.join(MODELS_DIR, "xgboost.pkl"))
-    if "cb" not in MODELS and os.path.exists(os.path.join(MODELS_DIR, "catboost.pkl")):
-        MODELS["cb"] = joblib.load(os.path.join(MODELS_DIR, "catboost.pkl"))
-    if "regressor" not in MODELS and os.path.exists(os.path.join(MODELS_DIR, "delay_regressor.pkl")):
-        MODELS["regressor"] = joblib.load(os.path.join(MODELS_DIR, "delay_regressor.pkl"))
+class FlightInputRequest(BaseModel):
+    carrier: str
+    origin: str
+    dest: str
+    crs_dep_time: int
+    crs_arr_time: int
+    day_of_month: int = 25
+    day_of_week: int = 4
+    distance: float = 800.0
+    tail_num: str = "N901DA"
+    turnaround_buffer_min: float = 90.0
 
 @app.on_event("startup")
 def startup_event():
-    load_system_artifacts()
+    global PREDICTOR
+    if PREDICTOR is None:
+        PREDICTOR = FDPISPredictor(model_dir=MODELS_DIR)
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -69,7 +67,7 @@ def health_check():
         "system": "Flight Delay Propagation Intelligence System (FDPIS)",
         "version": "2.0.0",
         "database_connected": os.path.exists(DB_PATH),
-        "models_loaded": list(MODELS.keys())
+        "predictor_ready": PREDICTOR is not None
     }
 
 @app.get("/api/overview")
@@ -85,7 +83,6 @@ def get_operations_overview():
     elevated_risk_flights = cursor.execute("SELECT COUNT(*) FROM flights WHERE risk_category = 'ELEVATED'").fetchone()[0]
     normal_flights = cursor.execute("SELECT COUNT(*) FROM flights WHERE risk_category = 'NORMAL'").fetchone()[0]
     
-    # At-risk origin hubs
     hub_risks = cursor.execute("""
         SELECT origin, 
                COUNT(*) as total_flights,
@@ -98,7 +95,6 @@ def get_operations_overview():
         LIMIT 8
     """).fetchall()
     
-    # At-risk aircraft rotations (tails with multiple high-risk flights)
     tail_risks = cursor.execute("""
         SELECT tail_num, carrier, COUNT(*) as flight_count, AVG(delay_prob) as avg_tail_risk
         FROM flights
@@ -165,6 +161,94 @@ def search_flights(
     conn.close()
     return [dict(r) for r in rows]
 
+@app.post("/api/predict-flight")
+def predict_new_flight(req: FlightInputRequest):
+    """
+    Interactive endpoint to input any custom flight schedule and get:
+    - classification delay probability (DEP_DEL15)
+    - regression delay duration in minutes (DEP_DELAY)
+    - estimated actual arrival time
+    - risk level
+    - explainable factors / reasons for delay
+    - full downstream aircraft rotation from the dataset
+    """
+    global PREDICTOR
+    if PREDICTOR is None:
+        PREDICTOR = FDPISPredictor(model_dir=MODELS_DIR)
+        
+    flight_dict = {
+        "OP_UNIQUE_CARRIER": req.carrier.upper(),
+        "ORIGIN": req.origin.upper(),
+        "DEST": req.dest.upper(),
+        "CRS_DEP_TIME": req.crs_dep_time,
+        "CRS_ARR_TIME": req.crs_arr_time,
+        "DAY_OF_MONTH": req.day_of_month,
+        "DAY_OF_WEEK": req.day_of_week,
+        "DISTANCE": req.distance,
+        "TAIL_NUM": req.tail_num.upper(),
+        "turnaround_buffer_min": req.turnaround_buffer_min
+    }
+    
+    prediction_result = PREDICTOR.predict_flight(flight_dict)
+    
+    # Check if this aircraft has downstream scheduled legs on the same day in the database
+    conn = get_db()
+    cursor = conn.cursor()
+    downstream_legs = cursor.execute("""
+        SELECT * FROM flights 
+        WHERE tail_num = ? AND day_of_month = ? AND crs_dep_time > ?
+        ORDER BY crs_dep_time ASC
+    """, [req.tail_num.upper(), req.day_of_month, req.crs_dep_time]).fetchall()
+    conn.close()
+    
+    downstream_list = [dict(r) for r in downstream_legs]
+    
+    # Compute multi-leg cascade progression along rotation
+    rotation_cascade = []
+    incoming_delay = prediction_result["predicted_delay_minutes"]
+    current_arr_time = req.crs_arr_time
+    
+    # Helper to convert HHMM to total minutes
+    def hhmm_to_min(t):
+        return (int(t) // 100) * 60 + (int(t) % 100)
+        
+    curr_arr_min = hhmm_to_min(current_arr_time)
+    
+    for leg in downstream_list:
+        leg_dep_min = hhmm_to_min(leg["crs_dep_time"])
+        ground_gap = leg_dep_min - curr_arr_min
+        if ground_gap < -720:
+            ground_gap += 1440
+            
+        absorbable_slack = max(0, ground_gap - 45) # 45m standard turnaround
+        transmitted_delay = incoming_delay * 0.95
+        residual_delay = max(0.0, transmitted_delay - absorbable_slack)
+        
+        # Calculate downstream estimated arrival
+        leg_arr_min = hhmm_to_min(leg["crs_arr_time"]) + int(round(residual_delay))
+        est_leg_arr_time = f"{(leg_arr_min // 60) % 24:02d}:{leg_arr_min % 60:02d}"
+        
+        rotation_cascade.append({
+            "flight_id": leg["flight_id"],
+            "route": f"{leg['origin']} -> {leg['dest']}",
+            "sched_dep": f"{leg['crs_dep_time'] // 100:02d}:{leg['crs_dep_time'] % 100:02d}",
+            "sched_arr": f"{leg['crs_arr_time'] // 100:02d}:{leg['crs_arr_time'] % 100:02d}",
+            "est_arr_time": est_leg_arr_time,
+            "ground_gap_min": ground_gap,
+            "absorbable_slack_min": absorbable_slack,
+            "incoming_delay_min": round(transmitted_delay, 1),
+            "residual_delay_min": round(residual_delay, 1),
+            "status": "DELAY_ABSORBED" if residual_delay <= 0 else ("HIGH_CASCADE_RISK" if residual_delay >= 30 else "MODERATE_CASCADE_RISK")
+        })
+        
+        # Next flight inherits this residual delay
+        incoming_delay = residual_delay
+        curr_arr_min = hhmm_to_min(leg["crs_arr_time"])
+        
+    prediction_result["aircraft_tail"] = req.tail_num.upper()
+    prediction_result["rotation_cascade"] = rotation_cascade
+    return prediction_result
+
 @app.get("/api/flights/{flight_id}")
 def get_flight_detail(flight_id: str):
     """
@@ -180,7 +264,6 @@ def get_flight_detail(flight_id: str):
         
     flight_dict = dict(flight)
     
-    # Fetch full day rotation for the same aircraft
     rotation = []
     if flight_dict["tail_num"] and flight_dict["tail_num"] != "UNKNOWN":
         rot_rows = cursor.execute("""
@@ -197,14 +280,13 @@ def get_flight_detail(flight_id: str):
     }
 
 @app.get("/api/propagation/{flight_id}")
-def get_flight_propagation_tree(flight_id: str, depth: int = 4):
+def get_flight_propagation_tree(flight_id: str, depth: int = 6):
     """
     Builds the dynamic network propagation tree for a root delayed flight using Breadth-First Search.
     """
     conn = get_db()
     cursor = conn.cursor()
     
-    # Fetch flight
     root_flight = cursor.execute("SELECT * FROM flights WHERE flight_id = ?", [flight_id]).fetchone()
     if not root_flight:
         conn.close()
@@ -213,7 +295,6 @@ def get_flight_propagation_tree(flight_id: str, depth: int = 4):
     root_dict = dict(root_flight)
     day = root_dict["day_of_month"]
     
-    # Load all flights for the day to construct the network slice
     day_flights = cursor.execute("SELECT * FROM flights WHERE day_of_month = ?", [day]).fetchall()
     conn.close()
     
@@ -229,7 +310,6 @@ def get_flight_propagation_tree(flight_id: str, depth: int = 4):
     engine = FDPISPropagationEngine(turnaround_buffer_threshold=45)
     engine.build_network_graph(df_day)
     
-    # Run cascade propagation
     init_delay = root_dict["predicted_delay"] if root_dict["predicted_delay"] > 0 else (45.0 if root_dict["delay_prob"] >= 0.40 else 25.0)
     tree = engine.propagate_cascade(flight_id, initial_delay_minutes=init_delay, max_depth=depth)
     return tree
@@ -276,7 +356,6 @@ def get_model_info():
         }
     }
 
-# Mount static web UI if directory exists
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
