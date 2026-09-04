@@ -19,6 +19,7 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 from src.propagation_engine import FDPISPropagationEngine
 from src.predict import FDPISPredictor
+from src.flight_tracking_service import FlightTrackingService
 
 app = FastAPI(
     title="FDPIS Operations Intelligence API",
@@ -36,6 +37,7 @@ app.add_middleware(
 
 # Global models and cache
 PREDICTOR: Optional[FDPISPredictor] = None
+TRACKING_SERVICE = FlightTrackingService(db_path=DB_PATH)
 
 class FlightInputRequest(BaseModel):
     carrier: str
@@ -391,6 +393,73 @@ def get_flight_propagation_tree(flight_id: str, depth: int = 6):
     init_delay = root_dict["predicted_delay"] if root_dict["predicted_delay"] > 0 else (45.0 if root_dict["delay_prob"] >= 0.40 else 25.0)
     tree = engine.propagate_cascade(flight_id, initial_delay_minutes=init_delay, max_depth=depth)
     return tree
+
+@app.get("/api/live-flights")
+def get_live_flights(
+    filter_type: Optional[str] = None, # 'fdpis_matched', 'high_risk', 'in_flight', 'carrier'
+    carrier: Optional[str] = None,
+    search: Optional[str] = None
+):
+    """
+    Returns real-time airspace tracking data.
+    Securely communicates with Flightradar24 / OpenSky or FDPIS active fleet surveillance engine.
+    """
+    data = TRACKING_SERVICE.get_live_flights()
+    flights = data.get("flights", [])
+    
+    if search:
+        s = search.strip().upper()
+        flights = [
+            f for f in flights 
+            if s in f["flight_id"].upper() or s in f["tail_num"].upper() or s in f["callsign"].upper() or s in f["origin"].upper() or s in f["dest"].upper()
+        ]
+    if filter_type == "fdpis_matched":
+        flights = [f for f in flights if f.get("fdpis_matched")]
+    elif filter_type == "high_risk":
+        flights = [f for f in flights if f.get("fdpis_risk_category") == "HIGH"]
+    elif filter_type == "in_flight":
+        flights = [f for f in flights if f.get("status") == "IN FLIGHT"]
+        
+    if carrier:
+        c_upper = carrier.strip().upper()
+        flights = [f for f in flights if f.get("carrier") == c_upper]
+        
+    return {
+        "status": data.get("status", "LIVE"),
+        "age_seconds": data.get("age_seconds", 0),
+        "timestamp_utc": data.get("timestamp_utc", ""),
+        "count": len(flights),
+        "flights": flights
+    }
+
+@app.get("/api/live-flights/{identifier}")
+def get_single_live_flight(identifier: str):
+    """
+    Retrieve live aircraft telemetry and full FDPIS rotation schedule and cascade propagation.
+    """
+    f = TRACKING_SERVICE.get_live_flight(identifier)
+    if not f:
+        raise HTTPException(status_code=404, detail=f"Live flight {identifier} not found in active airspace.")
+        
+    # Check if matched to an FDPIS flight in database
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Query matching schedule leg or aircraft rotation
+    fdpis_match = cursor.execute("""
+        SELECT * FROM flights 
+        WHERE (flight_id = ? OR tail_num = ?)
+        ORDER BY crs_dep_time ASC
+    """, [f["flight_id"], f["tail_num"]]).fetchall()
+    
+    rotation = [dict(r) for r in fdpis_match]
+    conn.close()
+    
+    return {
+        "live_telemetry": f,
+        "fdpis_rotation": rotation,
+        "matched": len(rotation) > 0
+    }
 
 @app.get("/api/network-routes")
 def get_network_routes(min_volume: int = 25):
